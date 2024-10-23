@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "259892562852",
+    "project_id": "workly-502ff",
+    "storage_bucket": "workly-502ff.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:259892562852:android:84de576f72af09ed9fcf31",
+        "android_client_info": {
+          "package_name": "com.aramonp.workly"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA5_9IBbFL_-WjsfHhelmPPnkhz_U_Op3A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
