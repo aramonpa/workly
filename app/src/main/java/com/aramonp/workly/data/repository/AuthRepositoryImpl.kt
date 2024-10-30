@@ -6,10 +6,11 @@ import com.aramonp.workly.domain.repository.AuthRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.tasks.await
+import javax.inject.Inject
 
-class AuthRepositoryImpl : AuthRepository {
-    private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
-
+class AuthRepositoryImpl @Inject constructor(
+    private val firebaseAuth: FirebaseAuth
+) : AuthRepository {
     override suspend fun signIn(email: String, password: String): AuthState {
         return try {
             val result = firebaseAuth.signInWithEmailAndPassword(email, password).await()
@@ -21,7 +22,7 @@ class AuthRepositoryImpl : AuthRepository {
 
     override suspend fun signUp(email: String, password: String): AuthState {
         return try {
-            val result = firebaseAuth.signInWithEmailAndPassword(email, password).await()
+            val result = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
             AuthState.Success(result.user)
         } catch (e: Exception) {
             AuthState.Error("Ocurrió un error crear el usuario.")
@@ -29,10 +30,15 @@ class AuthRepositoryImpl : AuthRepository {
     }
 
     override suspend fun signOut() {
-        TODO("Not yet implemented")
+        firebaseAuth.signOut()
     }
 
     override suspend fun getCurrentUser(): Result<FirebaseUser>? {
-        TODO("Not yet implemented")
+        val currentUser = firebaseAuth.currentUser
+        return if (currentUser != null) {
+            Result.success(currentUser)
+        } else {
+            Result.failure(Exception("No hay usuario autenticado"))
+        }
     }
 }

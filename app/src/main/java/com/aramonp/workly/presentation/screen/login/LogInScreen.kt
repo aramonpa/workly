@@ -3,7 +3,6 @@ package com.aramonp.workly.presentation.screen.login
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,17 +18,26 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
 import com.aramonp.workly.R
+import kotlinx.coroutines.launch
 
 @Composable
-fun LogInScreen(onNavigateToSignUp: () -> Unit) {
+fun LogInScreen(onNavigateToSignUp: () -> Unit, viewModel: LogInViewModel) {
+    val authState = viewModel.authState.observeAsState()
+    val email: String by viewModel.email.observeAsState("")
+    val password: String by viewModel.password.observeAsState("")
+    val coroutineScope = rememberCoroutineScope()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -49,12 +57,16 @@ fun LogInScreen(onNavigateToSignUp: () -> Unit) {
             Text("Crea una cuenta o inicia sesión para empezar a gestionar tus equipos.")
         }
         Spacer(modifier = Modifier.height(8.dp))
-        LogInField("Correo electrónico")
+        LogInField(email) { viewModel.onEmailChange(it) }
         Spacer(modifier = Modifier.height(8.dp))
-        LogInField("Contraseña")
+        LogInField(password) { viewModel.onPasswordChange(it) }
         Spacer(modifier = Modifier.height(8.dp))
         Button(
-            onClick = {},
+            onClick = {
+                coroutineScope.launch {
+                    viewModel.logIn(email, password)
+                }
+            },
             shape = RoundedCornerShape(5.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -77,11 +89,12 @@ fun LogInScreen(onNavigateToSignUp: () -> Unit) {
     }
 }
 
+@Preview
 @Composable
-fun LogInField(value: String) {
+fun LogInField(value: String = "", onValueChange: (String) -> Unit = {}) {
     TextField(
         value = value,
-        onValueChange = {},
+        onValueChange = { onValueChange(it) },
         shape = RoundedCornerShape(5.dp),
         modifier = Modifier.fillMaxWidth())
 }
@@ -91,12 +104,16 @@ fun SocialButton(onClick: () -> Unit, drawableId: Int, value: String) {
     Button(
         onClick = onClick,
         colors = ButtonDefaults.buttonColors(Color.White),
-        modifier = Modifier.fillMaxWidth().border(2.dp, Color.LightGray, RoundedCornerShape(5.dp))
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(2.dp, Color.LightGray, RoundedCornerShape(5.dp))
     ) {
         Image(
             painter = painterResource(drawableId),
             contentDescription = null,
-            modifier = Modifier.padding(end = 5.dp).size(16.dp)
+            modifier = Modifier
+                .padding(end = 5.dp)
+                .size(16.dp)
         )
         Text(value, color = Color.Black)
     }
