@@ -4,9 +4,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,9 +17,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.rememberCoroutineScope
@@ -29,10 +33,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aramonp.workly.R
+import com.aramonp.workly.domain.model.AuthState
 import kotlinx.coroutines.launch
 
 @Composable
-fun LogInScreen(onNavigateToSignUp: () -> Unit, viewModel: LogInViewModel) {
+fun LogInScreen(onNavigateToSignUp: () -> Unit, onNavigateToHome: () -> Unit, viewModel: LogInViewModel) {
     val authState = viewModel.authState.observeAsState()
     val email: String by viewModel.email.observeAsState("")
     val password: String by viewModel.password.observeAsState("")
@@ -87,6 +92,42 @@ fun LogInScreen(onNavigateToSignUp: () -> Unit, viewModel: LogInViewModel) {
         SocialButton({}, R.drawable.facebook, "Continuar con Facebook")
         Spacer(modifier = Modifier.height(8.dp))
     }
+
+    /*
+    TODO:
+     Check if is better to use navController directly
+     navController.navigate(Route.SignUpScreen.route)
+     */
+
+    // Manejo del estado de autenticación
+    when (authState.value) {
+        is AuthState.Loading -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .aspectRatio(1f)
+                )
+            }
+        }
+        is AuthState.Success -> {
+            // Usa LaunchedEffect para manejar la navegación
+            LaunchedEffect(Unit) {
+                onNavigateToHome()
+            }
+        }
+        is AuthState.Error -> {
+            val errorMessage = (authState.value as AuthState.Error).message
+            Text("Error: $errorMessage", color = Color.Red) // Muestra mensaje de error
+        }
+        else -> Unit /* Estado Idle, no hacer nada */
+    }
+
 }
 
 @Preview

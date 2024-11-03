@@ -2,6 +2,7 @@ package com.aramonp.workly.data.repository
 
 import androidx.lifecycle.LiveData
 import com.aramonp.workly.domain.model.AuthState
+import com.aramonp.workly.domain.model.User
 import com.aramonp.workly.domain.repository.AuthRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -20,9 +21,9 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun signUp(email: String, password: String): AuthState {
+    override suspend fun signUp(user: User): AuthState {
         return try {
-            val result = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
+            val result = firebaseAuth.createUserWithEmailAndPassword(user.email, user.password).await()
             AuthState.Success(result.user)
         } catch (e: Exception) {
             AuthState.Error("Ocurrió un error crear el usuario.")

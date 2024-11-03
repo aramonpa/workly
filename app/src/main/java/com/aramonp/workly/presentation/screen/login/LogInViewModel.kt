@@ -34,11 +34,10 @@ class LogInViewModel @Inject constructor(
     }
 
     suspend fun logIn(email: String, password: String) {
+        _authState.value = AuthState.Loading
         if (!isEmailValid(email) && !isPasswordValid(password)) {
             _authState.value = AuthState.Error("Email o contraseña incorrectos")
         }
-
-        _authState.value = AuthState.Loading
         _authState.value = authRepository.signIn(email, password)
     }
 

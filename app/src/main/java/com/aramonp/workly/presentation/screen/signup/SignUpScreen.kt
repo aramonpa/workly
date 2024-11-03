@@ -18,6 +18,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -26,10 +29,22 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.aramonp.workly.R
+import com.aramonp.workly.domain.model.Calendar
+import com.aramonp.workly.domain.model.User
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 
-@Preview
 @Composable
-fun SignUpScreen(onNavigateToLogIn: () -> Unit = {}) {
+fun SignUpScreen(onNavigateToLogIn: () -> Unit = {}, viewModel: SignUpViewModel) {
+    val authState = viewModel.authState.observeAsState()
+    val user = viewModel.user.observeAsState()
+    val name: String by viewModel.name.observeAsState("")
+    val surname: String by viewModel.surname.observeAsState("")
+    val username: String by viewModel.username.observeAsState("")
+    val email: String by viewModel.email.observeAsState("")
+    val password: String by viewModel.password.observeAsState("")
+    val coroutineScope = rememberCoroutineScope()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -38,42 +53,54 @@ fun SignUpScreen(onNavigateToLogIn: () -> Unit = {}) {
     ) {
         Spacer(modifier = Modifier.weight(1f))
         RegisterField(
-            "Nombre",
-            {},
+            name,
+            { viewModel.onNameChange(it) },
             Modifier.fillMaxWidth(),
             KeyboardOptions(keyboardType = KeyboardType.Text)
         )
         Spacer(modifier = Modifier.height(9.dp))
         RegisterField(
-            "Apellidos",
-            {},
+            surname,
+            { viewModel.onSurnameChange(it) },
             Modifier.fillMaxWidth(),
             KeyboardOptions(keyboardType = KeyboardType.Text)
         )
         Spacer(modifier = Modifier.height(9.dp))
         RegisterField(
-            "Email",
-            {},
+            email,
+            { viewModel.onEmailChange(it) },
             Modifier.fillMaxWidth(),
             KeyboardOptions(keyboardType = KeyboardType.Email)
         )
         Spacer(modifier = Modifier.height(9.dp))
         RegisterField(
-            "Nombre de usuario",
-            {},
+            username,
+            { viewModel.onUsernameChange(it) },
             Modifier.fillMaxWidth(),
             KeyboardOptions(keyboardType = KeyboardType.Text)
         )
         Spacer(modifier = Modifier.height(9.dp))
         RegisterField(
-            "Contraseña",
-            {},
+            password,
+            { viewModel.onPasswordChange(it) },
             Modifier.fillMaxWidth(),
             KeyboardOptions(keyboardType = KeyboardType.Password)
         )
         Spacer(modifier = Modifier.height(9.dp))
         Button(
-            onClick = {},
+            onClick = {
+                coroutineScope.launch {
+                    viewModel.signUp(User(
+                        id = "x",
+                        name = name,
+                        surname = surname,
+                        username = username,
+                        email = email,
+                        password = password,
+                        calendars = listOf()
+                    ))
+                }
+            },
             shape = RoundedCornerShape(5.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -131,7 +158,7 @@ fun SocialButton(onClick: () -> Unit, drawableId: Int, value: String) {
 @Composable
 fun RegisterField(
     value: String,
-    onValueChange: (String) -> Unit,
+    onValueChange: (String) -> Unit = {},
     modifier: Modifier,
     keyboardOption: KeyboardOptions) {
     OutlinedTextField(
