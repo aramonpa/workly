@@ -1,10 +1,13 @@
 package com.aramonp.workly.presentation.screen.home
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.aramonp.workly.domain.model.AuthState
 import com.aramonp.workly.presentation.screen.login.LogInViewModel

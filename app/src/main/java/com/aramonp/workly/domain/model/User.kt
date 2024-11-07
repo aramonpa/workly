@@ -1,11 +1,14 @@
 package com.aramonp.workly.domain.model
 
+import com.google.firebase.Timestamp
+
 data class User(
-    val id: String,
     val name: String,
     val surname: String,
     val email: String,
     val username: String,
-    val password: String,
-    val calendars: List<Calendar>
+    val active: Int,
+    val createdAt: Timestamp,
+    val updatedAt: Timestamp?,
+    val calendars: List<Calendar>?
 )

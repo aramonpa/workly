@@ -14,8 +14,6 @@ import javax.inject.Inject
 class LogInViewModel @Inject constructor(
     private val authRepository: AuthRepositoryImpl
 ) : ViewModel() {
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
-
     private val _authState = MutableLiveData<AuthState>()
     val authState: LiveData<AuthState> = _authState
 
@@ -25,8 +23,8 @@ class LogInViewModel @Inject constructor(
     private val _password = MutableLiveData<String>()
     val password: LiveData<String> = _password
 
-    fun checkAuthStatus() {
-        if (auth.currentUser != null) {
+    suspend fun checkAuthStatus() {
+        if (authRepository.getCurrentUser() != null) {
             _authState.value = AuthState.Authenticated
         } else {
             _authState.value = AuthState.Unauthenticated

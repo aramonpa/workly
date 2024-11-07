@@ -21,9 +21,9 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun signUp(user: User): AuthState {
+    override suspend fun signUp(email: String, password: String): AuthState {
         return try {
-            val result = firebaseAuth.createUserWithEmailAndPassword(user.email, user.password).await()
+            val result = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
             AuthState.Success(result.user)
         } catch (e: Exception) {
             AuthState.Error("Ocurrió un error crear el usuario.")

@@ -11,10 +11,11 @@ import com.aramonp.workly.presentation.screen.login.LogInScreen
 import com.aramonp.workly.presentation.screen.login.LogInViewModel
 import com.aramonp.workly.presentation.screen.signup.SignUpScreen
 import com.aramonp.workly.presentation.screen.signup.SignUpViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun NavGraph(navHostController: NavHostController) {
-    NavHost(navController = navHostController, startDestination = Route.LogInScreen.route) {
+fun NavGraph(navHostController: NavHostController, startDestination: String) {
+    NavHost(navController = navHostController, startDestination = startDestination) {
         composable(Route.LogInScreen.route) {
             val logInViewModel: LogInViewModel = hiltViewModel()
             LogInScreen(
@@ -27,6 +28,7 @@ fun NavGraph(navHostController: NavHostController) {
             val signUpViewModel: SignUpViewModel = hiltViewModel()
             SignUpScreen(
                 onNavigateToLogIn = { navHostController.navigate(Route.LogInScreen.route) },
+                onNavigateToHome = { navHostController.navigate(Route.HomeScreen.route) },
                 viewModel = signUpViewModel
             )
         }
