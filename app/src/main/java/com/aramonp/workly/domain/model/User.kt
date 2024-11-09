@@ -10,5 +10,5 @@ data class User(
     val active: Int,
     val createdAt: Timestamp,
     val updatedAt: Timestamp?,
-    val calendars: List<Calendar>?
+    val memberOf: List<String>?
 )

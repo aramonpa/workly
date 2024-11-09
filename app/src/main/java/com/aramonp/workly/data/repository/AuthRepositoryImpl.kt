@@ -34,7 +34,7 @@ class AuthRepositoryImpl @Inject constructor(
         firebaseAuth.signOut()
     }
 
-    override suspend fun getCurrentUser(): Result<FirebaseUser>? {
+    override suspend fun getCurrentUser(): Result<FirebaseUser> {
         val currentUser = firebaseAuth.currentUser
         return if (currentUser != null) {
             Result.success(currentUser)

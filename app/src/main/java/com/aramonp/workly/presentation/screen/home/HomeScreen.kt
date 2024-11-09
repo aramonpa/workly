@@ -1,5 +1,6 @@
 package com.aramonp.workly.presentation.screen.home
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -32,6 +33,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -47,47 +49,68 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aramonp.workly.R
 import com.aramonp.workly.domain.model.AuthState
+import com.aramonp.workly.domain.model.Calendar
+import com.aramonp.workly.domain.model.FirestoreState
 import com.aramonp.workly.domain.model.TopLevelRoute
+import com.aramonp.workly.domain.model.User
 import com.aramonp.workly.navigation.Route
 import com.aramonp.workly.presentation.screen.login.LogInViewModel
 
-@Preview
 @Composable
-fun HomeScreen(onNavigateToLogIn: () -> Unit = {}) {
-    Scaffold (
-        modifier = Modifier.fillMaxSize(),
-        topBar = {
-            Column(
-                modifier = Modifier.padding(top = 32.dp, start = 16.dp, end = 16.dp)
+fun HomeScreen(viewModel: HomeViewModel) {
+    val firestoreState = viewModel.firestoreState.observeAsState()
+
+    when (firestoreState.value) {
+        is FirestoreState.Success -> {
+            // Acceder a los datos cuando el estado es Success
+            val (user, calendars) = (firestoreState.value as FirestoreState.Success<Any>).data as Pair<*, *>
+
+            Scaffold (
+                modifier = Modifier.fillMaxSize(),
+                topBar = {
+                    Column(
+                        modifier = Modifier.padding(top = 32.dp, start = 16.dp, end = 16.dp)
+                    ) {
+                        Text(
+                            "¡Hola!",
+                            fontSize = 15.sp,
+                        )
+                        if (user)
+                        Text(
+                            userInfo.name,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                },
+                bottomBar = {
+                    BottomNavigationBar()
+
+                },
+                floatingActionButton = {
+                    FloatingActionButton(onClick = {  }) {
+                        Icon(Icons.Default.AddCircle, contentDescription = "Add")
+                    }
+                }
             ) {
-                Text(
-                    "¡Hola!",
-                    fontSize = 15.sp,
+                CalendarList(
+                    Modifier
+                        .padding(it)
+                        .padding(top = 16.dp, start = 16.dp, end = 16.dp)
                 )
-                Text(
-                    "Alejandro",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-        },
-        bottomBar = {
-            BottomNavigationBar()
-
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = {  }) {
-                Icon(Icons.Default.AddCircle, contentDescription = "Add")
             }
         }
-    ) {
-        CalendarList(
-            Modifier
-                .padding(it)
-                .padding(top = 16.dp, start = 16.dp, end = 16.dp)
-        )
+        is FirestoreState.Error -> {
+            Text("ERROR")
+        }
+        else -> {
+            // Manejar el caso en que no esté en estado de Success (Error o Loading)
+            null
+        }
     }
+
+
 }
 
 @Composable
@@ -121,10 +144,10 @@ fun CalendarList(modifier: Modifier = Modifier) {
                 CalendarItem("Calendario", "Calendario de alejandro")
             }
             item {
-                CalendarItem("Calendario2", "Calendario de marta")
+                CalendarItem("Calendario2", "Calendario de alejandro")
             }
             item {
-                CalendarItem("Calendario3", "Calendario de ana")
+                CalendarItem("Calendario3", "Calendario de alejandro")
             }
         }
     }
@@ -184,4 +207,8 @@ fun BottomNavigationBar() {
             )
         }
     }
+}
+
+fun getCalendarNum(userInfo: User): Int {
+    return userInfo.calendars.size
 }

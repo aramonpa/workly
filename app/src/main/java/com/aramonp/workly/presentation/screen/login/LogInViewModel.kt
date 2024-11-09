@@ -36,7 +36,7 @@ class LogInViewModel @Inject constructor(
         if (!isEmailValid(email) && !isPasswordValid(password)) {
             _authState.value = AuthState.Error("Email o contraseña incorrectos")
         }
-        _authState.value = authRepository.signIn(email, password)
+        _authState.value = AuthState.Success(authRepository.signIn(email, password))
     }
 
     fun onEmailChange(email: String) {

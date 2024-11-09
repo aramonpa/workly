@@ -7,6 +7,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.aramonp.workly.presentation.screen.home.HomeScreen
+import com.aramonp.workly.presentation.screen.home.HomeViewModel
 import com.aramonp.workly.presentation.screen.login.LogInScreen
 import com.aramonp.workly.presentation.screen.login.LogInViewModel
 import com.aramonp.workly.presentation.screen.signup.SignUpScreen
@@ -20,7 +21,7 @@ fun NavGraph(navHostController: NavHostController, startDestination: String) {
             val logInViewModel: LogInViewModel = hiltViewModel()
             LogInScreen(
                 onNavigateToSignUp = { navHostController.navigate(Route.SignUpScreen.route) },
-                onNavigateToHome = { navHostController.navigate(Route.HomeScreen.route) },
+                onNavigateToHome = { navHostController.navigate(Route.HomeScreen.route, ) },
                 viewModel = logInViewModel
             )
         }
@@ -33,9 +34,9 @@ fun NavGraph(navHostController: NavHostController, startDestination: String) {
             )
         }
         composable(Route.HomeScreen.route) {
-            val logInViewModel: LogInViewModel = hiltViewModel()
+            val homeViewModel: HomeViewModel = hiltViewModel()
             HomeScreen(
-                onNavigateToLogIn = { navHostController.navigate(Route.LogInScreen.route) }
+                viewModel = homeViewModel
             )
         }
     }
