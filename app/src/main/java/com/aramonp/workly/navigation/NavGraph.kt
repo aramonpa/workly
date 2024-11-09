@@ -35,8 +35,7 @@ fun NavGraph(navHostController: NavHostController, startDestination: String) {
         composable(Route.HomeScreen.route) {
             val logInViewModel: LogInViewModel = hiltViewModel()
             HomeScreen(
-                onNavigateToLogIn = { navHostController.navigate(Route.LogInScreen.route) },
-                viewModel = logInViewModel
+                onNavigateToLogIn = { navHostController.navigate(Route.LogInScreen.route) }
             )
         }
     }

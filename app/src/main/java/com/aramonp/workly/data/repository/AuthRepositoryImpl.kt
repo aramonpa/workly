@@ -17,7 +17,7 @@ class AuthRepositoryImpl @Inject constructor(
             val result = firebaseAuth.signInWithEmailAndPassword(email, password).await()
             AuthState.Success(result.user)
         } catch (e: Exception) {
-            AuthState.Error("Ocurrió un error al iniciar sesión.")
+            AuthState.Error("Ha habido un error al intentar iniciar sesión.")
         }
     }
 
@@ -26,7 +26,7 @@ class AuthRepositoryImpl @Inject constructor(
             val result = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
             AuthState.Success(result.user)
         } catch (e: Exception) {
-            AuthState.Error("Ocurrió un error crear el usuario.")
+            AuthState.Error("Ha habido un error al crear el usuario.")
         }
     }
 

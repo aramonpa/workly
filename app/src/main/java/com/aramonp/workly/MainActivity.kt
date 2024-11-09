@@ -40,7 +40,7 @@ class MainActivity : ComponentActivity() {
         return if (firebaseAuth.currentUser != null) {
             Route.HomeScreen.route
         } else {
-            Route.SignUpScreen.route
+            Route.LogInScreen.route
         }
     }
 }

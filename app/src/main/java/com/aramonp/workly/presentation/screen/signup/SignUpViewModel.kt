@@ -1,5 +1,6 @@
 package com.aramonp.workly.presentation.screen.signup
 
+import android.util.Patterns
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -9,6 +10,7 @@ import com.aramonp.workly.domain.model.AuthState
 import com.aramonp.workly.domain.model.FirestoreState
 import com.aramonp.workly.domain.model.User
 import com.aramonp.workly.domain.repository.FirestoreRepository
+import com.google.firebase.Timestamp
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -65,18 +67,26 @@ class SignUpViewModel @Inject constructor(
         _password.value = password
     }
 
-    suspend fun signUp(user: User) {
+    suspend fun signUp() {
         _authState.value = AuthState.Loading
 
+        val user = User(
+            name = name.value.orEmpty(),
+            surname = surname.value.orEmpty(),
+            username = username.value.orEmpty(),
+            email = email.value.orEmpty(),
+            active = 1,
+            createdAt = Timestamp.now(),
+            updatedAt = null,
+            calendars = null
+        )
+
         try {
-            // Paso 1: Realizar la autenticación
-            val authResult = password.value?.let { authRepository.signUp(user.email, it) }
+            val authResult = authRepository.signUp(user.email, password.value.orEmpty())
             if (authResult is AuthState.Success) {
-                // Paso 2: Crear usuario en Firestore solo si la autenticación fue exitosa
                 val firestoreResult = firestoreRepository.createUser(user)
                 _firestoreState.value = firestoreResult
 
-                // Actualizar el estado de autenticación según el resultado de Firestore
                 _authState.value = if (firestoreResult is FirestoreState.Success) {
                     authResult
                 } else {
