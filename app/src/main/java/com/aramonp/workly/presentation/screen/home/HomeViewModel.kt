@@ -9,6 +9,7 @@ import com.aramonp.workly.data.repository.FirestoreRepositoryImpl
 import com.aramonp.workly.domain.model.AuthState
 import com.aramonp.workly.domain.model.Calendar
 import com.aramonp.workly.domain.model.FirestoreState
+import com.aramonp.workly.domain.model.HomeState
 import com.aramonp.workly.domain.model.User
 import com.aramonp.workly.domain.repository.FirestoreRepository
 import com.google.firebase.auth.FirebaseUser
@@ -21,52 +22,54 @@ class HomeViewModel @Inject constructor(
     private val authRepository: AuthRepositoryImpl,
     private val firestoreRepository: FirestoreRepositoryImpl
 ) : ViewModel() {
-    private val _user = MutableLiveData<User>()
-    val user: LiveData<User> = _user
-
-    private val _calendars = MutableLiveData<List<Calendar>>()
-    val calendars: LiveData<List<Calendar>> = _calendars
-
-    private val _userState = MutableLiveData<FirestoreState<User>>()
-    val userState: LiveData<FirestoreState<User>> = _userState
-
-    private val _calendarState = MutableLiveData<FirestoreState<List<Calendar>>>()
-    val calendarState: LiveData<FirestoreState<List<Calendar>>> = _calendarState
+    private val _homeState = MutableLiveData<HomeState>()
+    val homeState: LiveData<HomeState> = _homeState
 
     init {
-        // Establecer el estado de carga al principio
-        _userState.value = FirestoreState.Loading()
-        _calendarState.value = FirestoreState.Loading()
+        fetchUser()
+    }
 
+    private fun fetchUser() {
+        _homeState.value = HomeState.Loading
         viewModelScope.launch {
-            val authUser = authRepository.getCurrentUser()
-            authUser
-                .onSuccess {
-                    val userInfo = getUserInfo(it!!.uid)
-
-                    userInfo
-                        .onSuccess { user ->
-                            _userState.value = FirestoreState.Success(user)
-
-                            if (!user!!.memberOf.isNullOrEmpty()) {
-                                getCalendarsByUser(user.memberOf!!)
-                                    .onSuccess { calendarList ->
-                                        _calendarState.value = FirestoreState.Success(calendarList)
-                                    }
-                            } else {
-                                _calendarState.value = FirestoreState.Success(emptyList())
-                            }
-                        }
-                        .onFailure { userError ->
-                            _calendarState.value = userError.message?.let { userError1 -> FirestoreState.Error(userError1) }
-                        }
-                }.onFailure {
-                    _userState.value = it.message?.let { it1 -> FirestoreState.Error(it1) }
+            val authResult = authRepository.getCurrentUser()
+            authResult.fold(
+                onSuccess = { user -> handleUser(user) },
+                onFailure = { error ->
+                    HomeState.Error(error.message.orEmpty())
                 }
-
+            )
         }
     }
 
+    private suspend fun handleUser(firebaseUser: FirebaseUser?) {
+        firebaseUser?.uid?.let { uid ->
+            getUserInfo(uid)
+                .onSuccess { user ->
+                    if (user!!.memberOf.isNullOrEmpty()) {
+                        _homeState.value = HomeState.Success(user, emptyList())
+                    } else {
+                        fetchUserCalendars(user)
+                    }
+                }
+                .onFailure { error ->
+                    HomeState.Error(error.message.orEmpty())
+                }
+        }
+    }
+
+    private suspend fun fetchUserCalendars(user: User) {
+        val calendarResult = getCalendarsByUser(user.memberOf ?: emptyList())
+        calendarResult
+            .onSuccess { calendars ->
+                _homeState.value = HomeState.Success(user, calendars ?: emptyList())
+            }
+            .onFailure { error ->
+                HomeState.Error(error.message.orEmpty())
+            }
+    }
+
+    // TODO: Review if it's better to use simple Types
     private suspend fun getUserInfo(uid: String): Result<User?> {
         return firestoreRepository.getUser(uid)
     }

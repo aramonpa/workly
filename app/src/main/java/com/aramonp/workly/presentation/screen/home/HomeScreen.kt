@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,8 +27,10 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -52,6 +55,7 @@ import com.aramonp.workly.R
 import com.aramonp.workly.domain.model.AuthState
 import com.aramonp.workly.domain.model.Calendar
 import com.aramonp.workly.domain.model.FirestoreState
+import com.aramonp.workly.domain.model.HomeState
 import com.aramonp.workly.domain.model.TopLevelRoute
 import com.aramonp.workly.domain.model.User
 import com.aramonp.workly.navigation.Route
@@ -59,62 +63,68 @@ import com.aramonp.workly.presentation.screen.login.LogInViewModel
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel) {
-    val userState = viewModel.userState.observeAsState()
-    val calendarState = viewModel.calendarState.observeAsState()
+    val homeState = viewModel.homeState.observeAsState()
 
-    Scaffold (
-        modifier = Modifier.fillMaxSize(),
-        topBar = {
-            Column(
-                modifier = Modifier.padding(top = 32.dp, start = 16.dp, end = 16.dp)
+    when (homeState.value) {
+        is HomeState.Loading -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    "¡Hola!",
-                    fontSize = 15.sp,
-                )
-                when (userState.value) {
-                    is FirestoreState.Success -> {
+                CircularProgressIndicator()
+            }
+        }
+        is HomeState.Success -> {
+            val user = (homeState.value as HomeState.Success).user
+            val calendarList = (homeState.value as HomeState.Success).calendarList
+
+            Scaffold (
+                modifier = Modifier.fillMaxSize(),
+                topBar = {
+                    Column(
+                        modifier = Modifier.padding(top = 32.dp, start = 16.dp, end = 16.dp)
+                    ) {
                         Text(
-                            (userState.value as FirestoreState.Success<User>).data!!.name.orEmpty(),
+                            "¡Hola!",
+                            fontSize = 15.sp,
+                        )
+                        Text(
+                            user.name!!,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
-                    is FirestoreState.Loading -> {
-                        CircularProgressIndicator()
+
+                },
+                bottomBar = {
+                    BottomNavigationBar()
+
+                },
+                floatingActionButton = {
+                    FloatingActionButton(
+                        onClick = {
+
+                        },
+                    ) {
+                        Icon(Icons.Default.AddCircle, contentDescription = "Add calendar")
                     }
-                    else -> Unit
                 }
-
-            }
-
-        },
-        bottomBar = {
-            BottomNavigationBar()
-
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = {  }) {
-                Icon(Icons.Default.AddCircle, contentDescription = "Add")
-            }
-        }
-    ) {
-        when (calendarState.value) {
-            is FirestoreState.Success -> {
+            ) {
                 CalendarList(
                     Modifier
                         .padding(it)
                         .padding(top = 16.dp, start = 16.dp, end = 16.dp),
-                    (calendarState.value as FirestoreState.Success<List<Calendar>>).data!!.size,
-                    (calendarState.value as FirestoreState.Success<List<Calendar>>).data!!
+                    calendarList.size,
+                    calendarList
                 )
-            }
-            is FirestoreState.Loading -> {
-                CircularProgressIndicator()
-            }
-            else -> Unit
-        }
 
+            }
+        }
+        is HomeState.Error -> {
+            Text(text = (homeState.value as HomeState.Error).message)
+        }
+        null -> Unit
     }
 }
 
