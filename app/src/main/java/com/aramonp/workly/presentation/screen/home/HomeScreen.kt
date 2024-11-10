@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -58,63 +59,67 @@ import com.aramonp.workly.presentation.screen.login.LogInViewModel
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel) {
-    val firestoreState = viewModel.firestoreState.observeAsState()
+    val userState = viewModel.userState.observeAsState()
+    val calendarState = viewModel.calendarState.observeAsState()
 
-    when (firestoreState.value) {
-        is FirestoreState.Success -> {
-            // Acceder a los datos cuando el estado es Success
-            val (user, calendars) = (firestoreState.value as FirestoreState.Success<Any>).data as Pair<*, *>
-
-            Scaffold (
-                modifier = Modifier.fillMaxSize(),
-                topBar = {
-                    Column(
-                        modifier = Modifier.padding(top = 32.dp, start = 16.dp, end = 16.dp)
-                    ) {
+    Scaffold (
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            Column(
+                modifier = Modifier.padding(top = 32.dp, start = 16.dp, end = 16.dp)
+            ) {
+                Text(
+                    "¡Hola!",
+                    fontSize = 15.sp,
+                )
+                when (userState.value) {
+                    is FirestoreState.Success -> {
                         Text(
-                            "¡Hola!",
-                            fontSize = 15.sp,
-                        )
-                        if (user)
-                        Text(
-                            userInfo.name,
+                            (userState.value as FirestoreState.Success<User>).data!!.name.orEmpty(),
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
-
-                },
-                bottomBar = {
-                    BottomNavigationBar()
-
-                },
-                floatingActionButton = {
-                    FloatingActionButton(onClick = {  }) {
-                        Icon(Icons.Default.AddCircle, contentDescription = "Add")
+                    is FirestoreState.Loading -> {
+                        CircularProgressIndicator()
                     }
+                    else -> Unit
                 }
-            ) {
+
+            }
+
+        },
+        bottomBar = {
+            BottomNavigationBar()
+
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = {  }) {
+                Icon(Icons.Default.AddCircle, contentDescription = "Add")
+            }
+        }
+    ) {
+        when (calendarState.value) {
+            is FirestoreState.Success -> {
                 CalendarList(
                     Modifier
                         .padding(it)
-                        .padding(top = 16.dp, start = 16.dp, end = 16.dp)
+                        .padding(top = 16.dp, start = 16.dp, end = 16.dp),
+                    (calendarState.value as FirestoreState.Success<List<Calendar>>).data!!.size,
+                    (calendarState.value as FirestoreState.Success<List<Calendar>>).data!!
                 )
             }
+            is FirestoreState.Loading -> {
+                CircularProgressIndicator()
+            }
+            else -> Unit
         }
-        is FirestoreState.Error -> {
-            Text("ERROR")
-        }
-        else -> {
-            // Manejar el caso en que no esté en estado de Success (Error o Loading)
-            null
-        }
+
     }
-
-
 }
 
 @Composable
-fun CalendarList(modifier: Modifier = Modifier) {
+fun CalendarList(modifier: Modifier = Modifier, calendarNum: Int, calendarList: List<Calendar>) {
     Column (modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth()
@@ -131,7 +136,7 @@ fun CalendarList(modifier: Modifier = Modifier) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "3",
+                    text = calendarNum.toString(),
                     fontSize = 20.sp
                 )
             }
@@ -140,14 +145,8 @@ fun CalendarList(modifier: Modifier = Modifier) {
             modifier = Modifier.padding(top = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            item {
-                CalendarItem("Calendario", "Calendario de alejandro")
-            }
-            item {
-                CalendarItem("Calendario2", "Calendario de alejandro")
-            }
-            item {
-                CalendarItem("Calendario3", "Calendario de alejandro")
+            items(calendarList) { item ->
+                CalendarItem(item.name, item.description)
             }
         }
     }
@@ -207,8 +206,4 @@ fun BottomNavigationBar() {
             )
         }
     }
-}
-
-fun getCalendarNum(userInfo: User): Int {
-    return userInfo.calendars.size
 }

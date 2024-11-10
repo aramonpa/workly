@@ -78,27 +78,26 @@ class SignUpViewModel @Inject constructor(
             active = 1,
             createdAt = Timestamp.now(),
             updatedAt = null,
-            calendars = null
+            memberOf = null
         )
 
-        try {
-            val authResult = authRepository.signUp(user.email, password.value.orEmpty())
-            if (authResult is AuthState.Success) {
-                val firestoreResult = firestoreRepository.createUser(user)
-                _firestoreState.value = firestoreResult
+        val authResult = authRepository.signUp(user.email.orEmpty(), password.value.orEmpty())
 
-                _authState.value = if (firestoreResult is FirestoreState.Success) {
-                    authResult
-                } else {
-                    AuthState.Error("Error creating user in Firestore")
-                }
-            } else {
-                // Si la autenticación falló, actualizar el estado con el error
-                _authState.value = AuthState.Error("Authentication failed")
+        authResult
+            .onSuccess {
+                val firestoreResult = firestoreRepository.createUser(user)
+                firestoreResult
+                    .onSuccess {
+                        _firestoreState.value = FirestoreState
+                            .Success(firestoreResult.getOrNull())
+                        _authState.value = AuthState.Success(authResult.getOrNull())
+                    }
+                    .onFailure {
+                        _firestoreState.value = it.message?.let { it1 -> FirestoreState.Error(it1) }
+                    }
             }
-        } catch (e: Exception) {
-            // Manejo de excepciones, si ocurre algún error inesperado
-            _authState.value = AuthState.Error(e.localizedMessage ?: "Unknown error")
-        }
+            .onFailure {
+                _authState.value = it.message?.let { it1 -> AuthState.Error(it1) }
+            }
     }
 }

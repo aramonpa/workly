@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import com.aramonp.workly.data.repository.AuthRepositoryImpl
 import com.aramonp.workly.domain.model.AuthState
 import com.google.firebase.auth.FirebaseAuth
+import com.google.rpc.context.AttributeContext.Auth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -23,12 +24,8 @@ class LogInViewModel @Inject constructor(
     private val _password = MutableLiveData<String>()
     val password: LiveData<String> = _password
 
-    suspend fun checkAuthStatus() {
-        if (authRepository.getCurrentUser() != null) {
-            _authState.value = AuthState.Authenticated
-        } else {
-            _authState.value = AuthState.Unauthenticated
-        }
+    fun checkAuthStatus() {
+        _authState.value = AuthState.Authenticated
     }
 
     suspend fun logIn(email: String, password: String) {
@@ -36,7 +33,14 @@ class LogInViewModel @Inject constructor(
         if (!isEmailValid(email) && !isPasswordValid(password)) {
             _authState.value = AuthState.Error("Email o contraseña incorrectos")
         }
-        _authState.value = AuthState.Success(authRepository.signIn(email, password))
+
+        authRepository.signIn(email, password)
+            .onSuccess {
+                _authState.value = AuthState.Success(it)
+            }
+            .onFailure {
+                _authState.value = it.message?.let { it1 -> AuthState.Error(it1) }
+            }
     }
 
     fun onEmailChange(email: String) {

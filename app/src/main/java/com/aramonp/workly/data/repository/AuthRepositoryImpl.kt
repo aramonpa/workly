@@ -12,21 +12,25 @@ import javax.inject.Inject
 class AuthRepositoryImpl @Inject constructor(
     private val firebaseAuth: FirebaseAuth
 ) : AuthRepository {
-    override suspend fun signIn(email: String, password: String): AuthState {
+    /*
+    TODO: Change Result for DataState and Flow
+     https://github.com/piashcse/Hilt-MVVM-Compose-Movie/blob/master/app/src/main/java/com/piashcse/hilt_mvvm_compose_movie/utils/network/DataState.kt
+     */
+    override suspend fun signIn(email: String, password: String): Result<FirebaseUser?> {
         return try {
             val result = firebaseAuth.signInWithEmailAndPassword(email, password).await()
-            AuthState.Success(result.user)
+            Result.success(result.user)
         } catch (e: Exception) {
-            AuthState.Error("Ha habido un error al intentar iniciar sesión.")
+            Result.failure(Exception("Ha habido un error al intentar iniciar sesión."))
         }
     }
 
-    override suspend fun signUp(email: String, password: String): AuthState {
+    override suspend fun signUp(email: String, password: String): Result<FirebaseUser?> {
         return try {
             val result = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
-            AuthState.Success(result.user)
+            Result.success(result.user)
         } catch (e: Exception) {
-            AuthState.Error("Ha habido un error al crear el usuario.")
+            Result.failure(Exception("Ha habido un error al intentar crear el usuario."))
         }
     }
 
@@ -34,7 +38,7 @@ class AuthRepositoryImpl @Inject constructor(
         firebaseAuth.signOut()
     }
 
-    override suspend fun getCurrentUser(): Result<FirebaseUser> {
+    override suspend fun getCurrentUser(): Result<FirebaseUser?> {
         val currentUser = firebaseAuth.currentUser
         return if (currentUser != null) {
             Result.success(currentUser)

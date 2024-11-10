@@ -17,13 +17,13 @@ class FirestoreRepositoryImpl @Inject constructor(
     private val authRepository: AuthRepositoryImpl,
     private val firebaseFirestore: FirebaseFirestore
 )  : FirestoreRepository {
-    override suspend fun createUser(user: User): FirestoreState<User> {
+    override suspend fun createUser(user: User): Result<User> {
         val userResult = authRepository.getCurrentUser()
 
-        // TODO: Fix of errors with states
-        if (userResult.isFailure) {
-            return FirestoreState.Error("Ocurrió un error al crear el usuario")
-        }
+        userResult
+            .onFailure {
+                return Result.failure(Exception("Error al identificar la sesión de usuario"))
+            }
 
         return try {
             userResult.getOrNull()?.let {
@@ -32,15 +32,15 @@ class FirestoreRepositoryImpl @Inject constructor(
                     .set(user)
                     .await()
             }
-            FirestoreState.Success(user)
+            Result.success(user)
         } catch (e: Exception) {
-            FirestoreState.Error("Ocurrió un error al crear el usuario")
+            Result.failure(Exception("Ocurrió un error al crear el usuario"))
         }
     }
 
-    override suspend fun getUser(id: String): FirestoreState<User> {
+    override suspend fun getUser(id: String): Result<User?> {
         return try {
-            FirestoreState.Success(
+            Result.success(
                 firebaseFirestore.collection("users")
                     .document(id)
                     .get()
@@ -48,21 +48,22 @@ class FirestoreRepositoryImpl @Inject constructor(
                     .toObject(User::class.java)
             )
         } catch (e: Exception) {
-            FirestoreState.Error("Ocurrió un error al obtener el usuario")
+            val ess = e.message
+            Result.failure(Exception("Ocurrió un error al obtener el usuario"))
         }
     }
 
-    override suspend fun updateUser(user: User): FirestoreState<User> {
+    override suspend fun updateUser(user: User): Result<User> {
         TODO("Not yet implemented")
     }
 
-    override suspend fun deleteUser(id: String): FirestoreState<User> {
+    override suspend fun deleteUser(id: String): Result<User> {
         TODO("Not yet implemented")
     }
 
-    override suspend fun getAllCalendarsByUser(calendarIds: List<String>): FirestoreState<List<Calendar>> {
+    override suspend fun getAllCalendarsByUser(calendarIds: List<String>): Result<List<Calendar>> {
         return try {
-            FirestoreState.Success(
+            Result.success(
                 firebaseFirestore
                     .collection("calendars")
                     .whereIn(FieldPath.documentId(), calendarIds)
@@ -72,23 +73,23 @@ class FirestoreRepositoryImpl @Inject constructor(
                     .mapNotNull { it.toObject(Calendar::class.java) }
             )
         } catch (e: Exception) {
-            FirestoreState.Error("Ocurrió un error al obtener el usuario")
+            Result.failure(Exception("Ocurrió un error al obtener el usuario"))
         }
     }
 
-    override suspend fun createEvent(event: Event): FirestoreState<Event> {
+    override suspend fun createEvent(event: Event): Result<Event> {
         TODO("Not yet implemented")
     }
 
-    override suspend fun getAllEventsByCalendar(calendarId: String): FirestoreState<List<User>> {
+    override suspend fun getAllEventsByCalendar(calendarId: String): Result<List<User>> {
         TODO("Not yet implemented")
     }
 
-    override suspend fun updateEvent(event: Event): FirestoreState<Event> {
+    override suspend fun updateEvent(event: Event): Result<Event> {
         TODO("Not yet implemented")
     }
 
-    override suspend fun deleteEvent(event: Event): FirestoreState<Event> {
+    override suspend fun deleteEvent(event: Event): Result<Event> {
         TODO("Not yet implemented")
     }
 }
