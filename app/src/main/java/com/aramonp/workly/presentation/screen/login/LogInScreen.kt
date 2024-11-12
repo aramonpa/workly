@@ -27,6 +27,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,9 +47,9 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun LogInScreen(onNavigateToSignUp: () -> Unit, onNavigateToHome: () -> Unit, viewModel: LogInViewModel) {
-    val authState = viewModel.authState.observeAsState()
-    val email: String by viewModel.email.observeAsState("")
-    val password: String by viewModel.password.observeAsState("")
+    val authState = viewModel.authState.collectAsState()
+    val email: String by viewModel.email.collectAsState()
+    val password: String by viewModel.password.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
     Scaffold(modifier = Modifier.fillMaxSize()) {
@@ -102,7 +103,7 @@ fun LogInScreen(onNavigateToSignUp: () -> Unit, onNavigateToHome: () -> Unit, vi
             }
             TextButton(onClick = { onNavigateToSignUp() }) {
                 Text(
-                    text = "¿Ya tienes una cuenta? Inicia sesión",
+                    text = "¿No tienes una cuenta? Regístrate",
                     color = Color.Gray
                 )
             }
@@ -157,6 +158,11 @@ fun LogInScreen(onNavigateToSignUp: () -> Unit, onNavigateToHome: () -> Unit, vi
         }
         else -> Unit
     }
+}
+
+@Composable
+fun LogInContent() {
+
 }
 
 @Composable

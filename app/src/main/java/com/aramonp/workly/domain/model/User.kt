@@ -9,6 +9,5 @@ data class User(
     val username: String? = "",
     val active: Int? = 0,
     val createdAt: Timestamp? = null,
-    val updatedAt: Timestamp? = null,
-    val memberOf: List<String>? = null
+    val updatedAt: Timestamp? = null
 )

@@ -12,8 +12,11 @@ import com.aramonp.workly.domain.model.FirestoreState
 import com.aramonp.workly.domain.model.HomeState
 import com.aramonp.workly.domain.model.User
 import com.aramonp.workly.domain.repository.FirestoreRepository
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -22,8 +25,20 @@ class HomeViewModel @Inject constructor(
     private val authRepository: AuthRepositoryImpl,
     private val firestoreRepository: FirestoreRepositoryImpl
 ) : ViewModel() {
-    private val _homeState = MutableLiveData<HomeState>()
-    val homeState: LiveData<HomeState> = _homeState
+    private val _homeState = MutableStateFlow<HomeState>(HomeState.Loading)
+    val homeState: StateFlow<HomeState> = _homeState
+
+    private val _calendarList = MutableStateFlow<List<Calendar>>(emptyList())
+    val calendarList: StateFlow<List<Calendar>> = _calendarList
+
+    private val _user = MutableStateFlow<User?>(null)
+    val user: StateFlow<User?> = _user
+
+    private val _name = MutableStateFlow("")
+    val name: StateFlow<String> = _name
+
+    private val _description = MutableStateFlow("")
+    val description: StateFlow<String> = _description
 
     init {
         fetchUser()
@@ -46,11 +61,8 @@ class HomeViewModel @Inject constructor(
         firebaseUser?.uid?.let { uid ->
             getUserInfo(uid)
                 .onSuccess { user ->
-                    if (user!!.memberOf.isNullOrEmpty()) {
-                        _homeState.value = HomeState.Success(user, emptyList())
-                    } else {
-                        fetchUserCalendars(user)
-                    }
+                    _user.value = user
+                    fetchUserCalendars(uid, user!!)
                 }
                 .onFailure { error ->
                     HomeState.Error(error.message.orEmpty())
@@ -58,14 +70,15 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private suspend fun fetchUserCalendars(user: User) {
-        val calendarResult = getCalendarsByUser(user.memberOf ?: emptyList())
+    private suspend fun fetchUserCalendars(uid: String, user: User) {
+        val calendarResult = getCalendarsByUser(uid)
         calendarResult
             .onSuccess { calendars ->
-                _homeState.value = HomeState.Success(user, calendars ?: emptyList())
+                _calendarList.value = calendars
+                _homeState.value = HomeState.Success(user, calendars)
             }
             .onFailure { error ->
-                HomeState.Error(error.message.orEmpty())
+                _homeState.value = HomeState.Error(error.message.orEmpty())
             }
     }
 
@@ -74,11 +87,43 @@ class HomeViewModel @Inject constructor(
         return firestoreRepository.getUser(uid)
     }
 
-    private suspend fun getCalendarsByUser(calendarIds: List<String>): Result<List<Calendar>?> {
-        return if (calendarIds.isEmpty()) {
-            Result.success(emptyList())
-        } else {
-            firestoreRepository.getAllCalendarsByUser(calendarIds)
+    private suspend fun getCalendarsByUser(uid: String): Result<List<Calendar>> {
+        return firestoreRepository.getAllCalendarsByUser(uid)
+    }
+
+    suspend fun createCalendar() {
+        _homeState.value = HomeState.Loading
+
+        if (_name.value.isNotEmpty()) {
+            val currentUser = authRepository.getCurrentUser().getOrNull()
+            val uid = currentUser?.uid!!
+
+            val calendar = Calendar(
+                name = _name.value,
+                description = _description.value,
+                ownerId = uid,
+                createdAt = Timestamp.now(),
+                members = listOf(uid)
+            )
+
+            viewModelScope.launch {
+                firestoreRepository.createCalendar(calendar)
+                    .onSuccess {
+                        _calendarList.value += calendar
+                        _homeState.value = HomeState.Success(_user.value!!, calendar)
+                    }
+                    .onFailure { _homeState.value = HomeState.Error(it.message.orEmpty()) }
+            }
         }
     }
+
+    fun onNameChange(name: String) {
+        _name.value = name
+    }
+
+    fun onDescriptionChange(description: String) {
+        _description.value = description
+    }
+
+
 }

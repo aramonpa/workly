@@ -10,9 +10,10 @@ import com.google.firebase.auth.FirebaseUser
 interface FirestoreRepository {
     suspend fun createUser(user: User): Result<User>
     suspend fun getUser(id: String): Result<User?>
-    suspend fun updateUser(user: User): Result<User>
+    suspend fun updateUser(uid:String, userMap: Map<String, Any>): Result<Boolean>
     suspend fun deleteUser(id: String): Result<User>
-    suspend fun getAllCalendarsByUser(calendarIds: List<String>): Result<List<Calendar>>
+    suspend fun createCalendar(calendar: Calendar): Result<String>
+    suspend fun getAllCalendarsByUser(uid: String): Result<List<Calendar>>
     suspend fun createEvent(event: Event): Result<Event>
     suspend fun getAllEventsByCalendar(calendarId: String): Result<List<User>>
     suspend fun updateEvent(event: Event): Result<Event>

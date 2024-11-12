@@ -48,31 +48,51 @@ class FirestoreRepositoryImpl @Inject constructor(
                     .toObject(User::class.java)
             )
         } catch (e: Exception) {
-            val ess = e.message
+            val t = e.message
             Result.failure(Exception("Ocurrió un error al obtener el usuario"))
         }
     }
 
-    override suspend fun updateUser(user: User): Result<User> {
-        TODO("Not yet implemented")
+    override suspend fun updateUser(uid:String, userMap: Map<String, Any>): Result<Boolean> {
+        return try {
+            firebaseFirestore.collection("users")
+                .document(uid)
+                .update(userMap)
+            Result.success(true)
+        } catch (e: Exception) {
+            Result.failure(Exception("Ocurrió un error al obtener el usuario"))
+        }
     }
 
     override suspend fun deleteUser(id: String): Result<User> {
         TODO("Not yet implemented")
     }
 
-    override suspend fun getAllCalendarsByUser(calendarIds: List<String>): Result<List<Calendar>> {
+    override suspend fun createCalendar(calendar: Calendar): Result<String> {
+        return try {
+            val calendarId = firebaseFirestore
+                .collection("calendars")
+                .add(calendar)
+                .await()
+            Result.success(calendarId.id)
+        } catch (e: Exception) {
+            Result.failure(Exception("Ocurrió un error al crear el calendario"))
+        }
+    }
+
+    override suspend fun getAllCalendarsByUser(uid: String): Result<List<Calendar>> {
         return try {
             Result.success(
                 firebaseFirestore
                     .collection("calendars")
-                    .whereIn(FieldPath.documentId(), calendarIds)
+                    .whereArrayContains("members", uid)
                     .get()
                     .await()
                     .documents
                     .mapNotNull { it.toObject(Calendar::class.java) }
             )
         } catch (e: Exception) {
+            val ree = e.message
             Result.failure(Exception("Ocurrió un error al obtener el usuario"))
         }
     }
