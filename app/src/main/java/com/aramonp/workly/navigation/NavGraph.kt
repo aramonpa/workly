@@ -1,15 +1,18 @@
 package com.aramonp.workly.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.internal.composableLambda
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.aramonp.workly.presentation.screen.home.HomeScreen
+import com.aramonp.workly.presentation.screen.home.HomeViewModel
 import com.aramonp.workly.presentation.screen.login.LogInScreen
 import com.aramonp.workly.presentation.screen.login.LogInViewModel
 import com.aramonp.workly.presentation.screen.signup.SignUpScreen
+import com.aramonp.workly.presentation.screen.calendar.CalendarScreen
 import com.aramonp.workly.presentation.screen.signup.SignUpViewModel
 import com.google.firebase.auth.FirebaseAuth
 
@@ -20,7 +23,7 @@ fun NavGraph(navHostController: NavHostController, startDestination: String) {
             val logInViewModel: LogInViewModel = hiltViewModel()
             LogInScreen(
                 onNavigateToSignUp = { navHostController.navigate(Route.SignUpScreen.route) },
-                onNavigateToHome = { navHostController.navigate(Route.HomeScreen.route) },
+                onNavigateToHome = { navHostController.navigate(Route.HomeScreen.route, ) },
                 viewModel = logInViewModel
             )
         }
@@ -33,10 +36,15 @@ fun NavGraph(navHostController: NavHostController, startDestination: String) {
             )
         }
         composable(Route.HomeScreen.route) {
-            val logInViewModel: LogInViewModel = hiltViewModel()
+            val homeViewModel: HomeViewModel = hiltViewModel()
             HomeScreen(
-                onNavigateToLogIn = { navHostController.navigate(Route.LogInScreen.route) }
+                onNavigateToCalendar = { navHostController.navigate(Route.CalendarScreen.route) },
+                viewModel = homeViewModel
             )
+        }
+        composable(Route.CalendarScreen.route) { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("id") ?: ""
+            CalendarScreen(id = id)
         }
     }
 }

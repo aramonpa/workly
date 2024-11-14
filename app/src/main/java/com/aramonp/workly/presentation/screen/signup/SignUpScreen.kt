@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -55,12 +56,12 @@ import java.util.Calendar
 
 @Composable
 fun SignUpScreen(onNavigateToLogIn: () -> Unit = {}, onNavigateToHome: () -> Unit = {}, viewModel: SignUpViewModel) {
-    val authState = viewModel.authState.observeAsState()
-    val name: String by viewModel.name.observeAsState("")
-    val surname: String by viewModel.surname.observeAsState("")
-    val username: String by viewModel.username.observeAsState("")
-    val email: String by viewModel.email.observeAsState("")
-    val password: String by viewModel.password.observeAsState("")
+    val authState = viewModel.authState.collectAsState()
+    val name: String by viewModel.name.collectAsState()
+    val surname: String by viewModel.surname.collectAsState()
+    val username: String by viewModel.username.collectAsState()
+    val email: String by viewModel.email.collectAsState()
+    val password: String by viewModel.password.collectAsState()
 
     var confirmPassword by remember { mutableStateOf("") }
 
@@ -82,32 +83,28 @@ fun SignUpScreen(onNavigateToLogIn: () -> Unit = {}, onNavigateToHome: () -> Uni
                 "Nombre",
                 { value -> viewModel.onNameChange(value.trim()) },
                 Modifier.fillMaxWidth(),
-                KeyboardOptions(keyboardType = KeyboardType.Text),
-                VisualTransformation.None
+                KeyboardOptions(keyboardType = KeyboardType.Text)
             )
             RegisterField(
                 surname,
                 "Apellidos",
                 { value -> viewModel.onSurnameChange(value.trim()) },
                 Modifier.fillMaxWidth(),
-                KeyboardOptions(keyboardType = KeyboardType.Text),
-                VisualTransformation.None
+                KeyboardOptions(keyboardType = KeyboardType.Text)
             )
             RegisterField(
                 email,
                 "Email",
                 { value -> viewModel.onEmailChange(value.trim()) },
                 Modifier.fillMaxWidth(),
-                KeyboardOptions(keyboardType = KeyboardType.Email),
-                VisualTransformation.None
+                KeyboardOptions(keyboardType = KeyboardType.Email)
             )
             RegisterField(
                 username,
                 "Nombre de usuario",
                 { value -> viewModel.onUsernameChange(value.trim()) },
                 Modifier.fillMaxWidth(),
-                KeyboardOptions(keyboardType = KeyboardType.Text),
-                VisualTransformation.None
+                KeyboardOptions(keyboardType = KeyboardType.Text)
             )
             RegisterField(
                 password,
@@ -234,7 +231,7 @@ fun RegisterField(
     onValueChange: (String) -> Unit,
     modifier: Modifier,
     keyboardOption: KeyboardOptions,
-    visualTransformation: VisualTransformation,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
     isError: Boolean = false
 ) {
     OutlinedTextField(

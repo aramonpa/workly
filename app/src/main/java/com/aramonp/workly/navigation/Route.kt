@@ -1,7 +1,8 @@
 package com.aramonp.workly.navigation
 
 sealed class Route (val route: String) {
-    object LogInScreen : Route(route = "logInScreen")
-    object SignUpScreen : Route(route = "signUpScreen")
-    object HomeScreen : Route(route = "homeScreen")
+    data object LogInScreen : Route(route = "logInScreen")
+    data object SignUpScreen : Route(route = "signUpScreen")
+    data object HomeScreen : Route(route = "homeScreen")
+    data object CalendarScreen : Route(route = "calendarScreen/{id}")
 }

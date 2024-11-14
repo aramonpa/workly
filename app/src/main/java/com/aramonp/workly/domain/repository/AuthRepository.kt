@@ -5,8 +5,8 @@ import com.aramonp.workly.domain.model.User
 import com.google.firebase.auth.FirebaseUser
 
 interface AuthRepository {
-    suspend fun signIn(email: String, password: String): AuthState
-    suspend fun signUp(email: String, password: String): AuthState
+    suspend fun signIn(email: String, password: String): Result<FirebaseUser?>
+    suspend fun signUp(email: String, password: String): Result<FirebaseUser?>
     suspend fun signOut()
-    suspend fun getCurrentUser(): Result<FirebaseUser>?
+    suspend fun getCurrentUser(): Result<FirebaseUser?>
 }
