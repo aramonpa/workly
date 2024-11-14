@@ -1,17 +1,12 @@
 package com.aramonp.workly.presentation.screen.home
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aramonp.workly.data.repository.AuthRepositoryImpl
 import com.aramonp.workly.data.repository.FirestoreRepositoryImpl
-import com.aramonp.workly.domain.model.AuthState
 import com.aramonp.workly.domain.model.Calendar
-import com.aramonp.workly.domain.model.FirestoreState
 import com.aramonp.workly.domain.model.HomeState
 import com.aramonp.workly.domain.model.User
-import com.aramonp.workly.domain.repository.FirestoreRepository
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,27 +20,26 @@ class HomeViewModel @Inject constructor(
     private val authRepository: AuthRepositoryImpl,
     private val firestoreRepository: FirestoreRepositoryImpl
 ) : ViewModel() {
-    private val _homeState = MutableStateFlow<HomeState>(HomeState.Loading)
-    val homeState: StateFlow<HomeState> = _homeState
+    private val _userState = MutableStateFlow<HomeState<User>>(HomeState.Loading)
+    val userState: StateFlow<HomeState<User>> = _userState
+
+    private val _calendarListState = MutableStateFlow<HomeState<List<Calendar>>>(HomeState.Loading)
+    val calendarListState: StateFlow<HomeState<List<Calendar>>> = _calendarListState
 
     private val _calendarList = MutableStateFlow<List<Calendar>>(emptyList())
-    val calendarList: StateFlow<List<Calendar>> = _calendarList
 
-    private val _user = MutableStateFlow<User?>(null)
-    val user: StateFlow<User?> = _user
+    private val _calendarName = MutableStateFlow("")
+    val calendarName: StateFlow<String> = _calendarName
 
-    private val _name = MutableStateFlow("")
-    val name: StateFlow<String> = _name
-
-    private val _description = MutableStateFlow("")
-    val description: StateFlow<String> = _description
+    private val _calendarDescription = MutableStateFlow("")
+    val calendarDescription: StateFlow<String> = _calendarDescription
 
     init {
         fetchUser()
     }
 
     private fun fetchUser() {
-        _homeState.value = HomeState.Loading
+        _userState.value = HomeState.Loading
         viewModelScope.launch {
             val authResult = authRepository.getCurrentUser()
             authResult.fold(
@@ -61,7 +55,6 @@ class HomeViewModel @Inject constructor(
         firebaseUser?.uid?.let { uid ->
             getUserInfo(uid)
                 .onSuccess { user ->
-                    _user.value = user
                     fetchUserCalendars(uid, user!!)
                 }
                 .onFailure { error ->
@@ -75,10 +68,11 @@ class HomeViewModel @Inject constructor(
         calendarResult
             .onSuccess { calendars ->
                 _calendarList.value = calendars
-                _homeState.value = HomeState.Success(user, calendars)
+                _userState.value = HomeState.Success(user)
+                _calendarListState.value = HomeState.Success(calendars)
             }
             .onFailure { error ->
-                _homeState.value = HomeState.Error(error.message.orEmpty())
+                _userState.value = HomeState.Error(error.message.orEmpty())
             }
     }
 
@@ -92,15 +86,15 @@ class HomeViewModel @Inject constructor(
     }
 
     suspend fun createCalendar() {
-        _homeState.value = HomeState.Loading
+        //_calendarListState.value = HomeState.Loading
 
-        if (_name.value.isNotEmpty()) {
+        if (_calendarName.value.isNotEmpty()) {
             val currentUser = authRepository.getCurrentUser().getOrNull()
             val uid = currentUser?.uid!!
 
             val calendar = Calendar(
-                name = _name.value,
-                description = _description.value,
+                name = _calendarName.value,
+                description = _calendarDescription.value,
                 ownerId = uid,
                 createdAt = Timestamp.now(),
                 members = listOf(uid)
@@ -109,21 +103,20 @@ class HomeViewModel @Inject constructor(
             viewModelScope.launch {
                 firestoreRepository.createCalendar(calendar)
                     .onSuccess {
+                        calendar.uid = it
                         _calendarList.value += calendar
-                        _homeState.value = HomeState.Success(_user.value!!, calendar)
+                        _calendarListState.value = HomeState.Success(_calendarList.value)
                     }
-                    .onFailure { _homeState.value = HomeState.Error(it.message.orEmpty()) }
+                    .onFailure { _calendarListState.value = HomeState.Error(it.message.orEmpty()) }
             }
         }
     }
 
     fun onNameChange(name: String) {
-        _name.value = name
+        _calendarName.value = name
     }
 
     fun onDescriptionChange(description: String) {
-        _description.value = description
+        _calendarDescription.value = description
     }
-
-
 }

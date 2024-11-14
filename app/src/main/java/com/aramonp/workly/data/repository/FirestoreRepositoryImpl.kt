@@ -2,14 +2,11 @@ package com.aramonp.workly.data.repository
 
 import com.aramonp.workly.domain.model.Calendar
 import com.aramonp.workly.domain.model.Event
-import com.aramonp.workly.domain.model.FirestoreState
 import com.aramonp.workly.domain.model.User
+import com.aramonp.workly.domain.model.toMap
 import com.aramonp.workly.domain.repository.FirestoreRepository
-import com.google.firebase.Firebase
-import com.google.firebase.firestore.FieldPath
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.firestore
-import com.google.firebase.firestore.ktx.firestore
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
@@ -70,11 +67,11 @@ class FirestoreRepositoryImpl @Inject constructor(
 
     override suspend fun createCalendar(calendar: Calendar): Result<String> {
         return try {
-            val calendarId = firebaseFirestore
+            val snapshot = firebaseFirestore
                 .collection("calendars")
-                .add(calendar)
+                .add(calendar.toMap())
                 .await()
-            Result.success(calendarId.id)
+            Result.success(snapshot.id)
         } catch (e: Exception) {
             Result.failure(Exception("Ocurrió un error al crear el calendario"))
         }
@@ -89,13 +86,28 @@ class FirestoreRepositoryImpl @Inject constructor(
                     .get()
                     .await()
                     .documents
-                    .mapNotNull { it.toObject(Calendar::class.java) }
+                    .map { documentSnapshot ->
+                        documentSnapshot.toCalendar()
+                    }
             )
         } catch (e: Exception) {
-            val ree = e.message
             Result.failure(Exception("Ocurrió un error al obtener el usuario"))
         }
     }
+
+    private fun DocumentSnapshot.toCalendar(): Calendar {
+        return Calendar(
+            uid = id,
+            name = getString("name")!!,
+            description = getString("description")!!,
+            ownerId = getString("ownerId")!!,
+            createdAt = getTimestamp("createdAt")!!,
+            updatedAt = getTimestamp("updatedAt"),
+            members = (get("members") as? List<*>)?.mapNotNull { it as? String }!!,
+            events = (get("events") as? List<*>)?.mapNotNull { it as? Event }
+        )
+    }
+
 
     override suspend fun createEvent(event: Event): Result<Event> {
         TODO("Not yet implemented")

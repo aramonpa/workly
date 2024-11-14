@@ -1,20 +1,16 @@
 package com.aramonp.workly.presentation.screen.home
 
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,15 +22,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
@@ -43,10 +36,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,38 +46,30 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.aramonp.workly.R
-import com.aramonp.workly.domain.model.AuthState
 import com.aramonp.workly.domain.model.Calendar
-import com.aramonp.workly.domain.model.FirestoreState
 import com.aramonp.workly.domain.model.HomeState
 import com.aramonp.workly.domain.model.TopLevelRoute
 import com.aramonp.workly.domain.model.User
 import com.aramonp.workly.navigation.Route
-import com.aramonp.workly.presentation.screen.login.LogInViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun HomeScreen(onNavigateToHome: () -> Unit = {}, viewModel: HomeViewModel) {
-    val homeState = viewModel.homeState.collectAsState()
-    val name: String by viewModel.name.collectAsState()
-    val description: String by viewModel.description.collectAsState()
-    val calendarList: List<Calendar> by viewModel.calendarList.collectAsState()
-    var showDialog by remember { mutableStateOf(false) }
+fun HomeScreen(onNavigateToCalendar: (String) -> Unit, viewModel: HomeViewModel) {
+    val userState = viewModel.userState.collectAsState()
+    val calendarListState = viewModel.calendarListState.collectAsState()
 
-    when (homeState.value) {
+    when (userState.value) {
         is HomeState.Loading -> {
             Box(
                 modifier = Modifier
@@ -97,59 +80,90 @@ fun HomeScreen(onNavigateToHome: () -> Unit = {}, viewModel: HomeViewModel) {
             }
         }
         is HomeState.Success -> {
-            val user = (homeState.value as HomeState.Success).user
-
-            Scaffold (
-                modifier = Modifier.fillMaxSize(),
-                topBar = {
-                    Column(
-                        modifier = Modifier.padding(top = 32.dp, start = 16.dp, end = 16.dp)
-                    ) {
-                        Text(
-                            "¡Hola!",
-                            fontSize = 15.sp,
-                        )
-                        Text(
-                            user.name!!,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                },
-                bottomBar = {
-                    BottomNavigationBar()
-
-                },
-                floatingActionButton = {
-                    FloatingActionButton(
-                        onClick = { showDialog = true },
-                    ) {
-                        Icon(Icons.Default.AddCircle, contentDescription = "Add calendar")
-                    }
-                }
-            ) {
-                if (showDialog) {
-                    // Mostrar el diálogo cuando showDialog es verdadero
-                    ShowDialogSurface(viewModel, onNavigateToHome, name, description, onDismiss = { showDialog = false })
-                }
-                CalendarList(
-                    Modifier
-                        .padding(it)
-                        .padding(top = 16.dp, start = 16.dp, end = 16.dp),
-                    calendarList.size,
-                    calendarList
-                )
-            }
+            HomeContent(
+                (userState.value as HomeState.Success<User>).data,
+                calendarListState.value,
+                viewModel,
+                onNavigateToCalendar
+            )
         }
         is HomeState.Error -> {
-            Text(text = (homeState.value as HomeState.Error).message)
+            Text("Error al cargar.", textAlign = TextAlign.Center)
         }
     }
 }
 
 @Composable
-fun CalendarList(modifier: Modifier = Modifier, calendarNum: Int, calendarList: List<Calendar>) {
+fun HomeContent(
+    user: User,
+    calendarListState: HomeState<List<Calendar>>,
+    viewModel: HomeViewModel,
+    navigation: (String) -> Unit
+) {
+    var showDialog by remember { mutableStateOf(false) }
+    val calendarName: String by viewModel.calendarName.collectAsState()
+    val calendarDescription: String by viewModel.calendarDescription.collectAsState()
+
+    Scaffold (
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            Column(
+                modifier = Modifier.padding(top = 32.dp, start = 16.dp, end = 16.dp)
+            ) {
+                Text(
+                    "¡Hola!",
+                    fontSize = 15.sp,
+                )
+                Text(
+                    user.name,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        bottomBar = {
+            BottomNavigationBar()
+
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showDialog = true },
+            ) {
+                Icon(Icons.Default.AddCircle, contentDescription = "Add calendar")
+            }
+        }
+    ) {
+        if (showDialog) {
+            ShowDialogSurface(viewModel, calendarName, calendarDescription, onDismiss = { showDialog = false })
+        }
+
+        when (calendarListState) {
+            is HomeState.Loading -> {
+                CircularProgressIndicator()
+            }
+            is HomeState.Success  -> {
+                CalendarList(
+                    Modifier
+                        .padding(it)
+                        .padding(top = 16.dp, start = 16.dp, end = 16.dp),
+                    calendarListState.data.size,
+                    calendarListState.data,
+                    navigation
+                )
+            }
+            is HomeState.Error -> {
+                Text(text = calendarListState.message)
+            }
+        }
+    }
+}
+
+@Composable
+fun CalendarList(
+    modifier: Modifier = Modifier,
+    calendarNum: Int,
+    calendarList: List<Calendar>,
+    navigation: (String) -> Unit) {
     Column (modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth()
@@ -171,23 +185,31 @@ fun CalendarList(modifier: Modifier = Modifier, calendarNum: Int, calendarList: 
                 )
             }
         }
-        LazyColumn(
-            modifier = Modifier.padding(top = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(calendarList) { item ->
-                CalendarItem(item.name, item.description)
+        if (calendarNum == 0) {
+            Text(
+                modifier = Modifier.padding(top = 16.dp),
+                text = "No tienes ningún calendario aún.",
+                textAlign = TextAlign.Center)
+        } else {
+            LazyColumn(
+                modifier = Modifier.padding(top = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(calendarList) { item ->
+                    CalendarItem(item.name, item.description, item.uid, navigation)
+                }
             }
         }
     }
 }
 
 @Composable
-fun CalendarItem(name: String, description: String) {
+fun CalendarItem(name: String, description: String, id: String, navigation: (String) -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(color = Color.LightGray, shape = RoundedCornerShape(16.dp))
+            .clickable { navigation(id) }
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -239,7 +261,7 @@ fun BottomNavigationBar() {
 }
 
 @Composable
-fun ShowDialogSurface(viewModel: HomeViewModel, navigation: () -> Unit, name: String, description: String, onDismiss: () -> Unit = {}) {
+fun ShowDialogSurface(viewModel: HomeViewModel, name: String, description: String, onDismiss: () -> Unit = {}) {
     val coroutineScope = rememberCoroutineScope()
 
     Dialog(onDismissRequest = onDismiss) {
@@ -282,8 +304,11 @@ fun ShowDialogSurface(viewModel: HomeViewModel, navigation: () -> Unit, name: St
                         onClick = {
                             coroutineScope.launch {
                                 viewModel.createCalendar()
+                                viewModel.onNameChange("")
+                                viewModel.onDescriptionChange("")
+                                onDismiss()
+
                             }
-                            onDismiss()
                         }
                     ) {
                         Text("Crear")

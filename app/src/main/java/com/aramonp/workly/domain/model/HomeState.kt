@@ -1,7 +1,7 @@
 package com.aramonp.workly.domain.model
 
-sealed class HomeState {
-    data class Success(val user: User, val data: Any?) : HomeState()
-    data class Error(val message: String) : HomeState()
-    data object Loading : HomeState()
+sealed class HomeState<out T> {
+    data class Success<out T>(val data: T) : HomeState<T>()
+    data class Error(val message: String) : HomeState<Nothing>()
+    data object Loading : HomeState<Nothing>()
 }
