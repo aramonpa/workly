@@ -19,17 +19,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -38,16 +34,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -56,16 +49,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.navigation.NavHostController
 import com.aramonp.workly.R
 import com.aramonp.workly.domain.model.Calendar
 import com.aramonp.workly.domain.model.HomeState
-import com.aramonp.workly.domain.model.TopLevelRoute
 import com.aramonp.workly.domain.model.User
-import com.aramonp.workly.navigation.Route
+import com.aramonp.workly.presentation.component.BottomNavigationBar
 import kotlinx.coroutines.launch
 
 @Composable
-fun HomeScreen(onNavigateToCalendar: (String) -> Unit, viewModel: HomeViewModel) {
+fun HomeScreen(onNavigateToCalendar: (String) -> Unit, navController: NavHostController, viewModel: HomeViewModel) {
     val userState = viewModel.userState.collectAsState()
     val calendarListState = viewModel.calendarListState.collectAsState()
 
@@ -84,7 +77,8 @@ fun HomeScreen(onNavigateToCalendar: (String) -> Unit, viewModel: HomeViewModel)
                 (userState.value as HomeState.Success<User>).data,
                 calendarListState.value,
                 viewModel,
-                onNavigateToCalendar
+                onNavigateToCalendar,
+                navController
             )
         }
         is HomeState.Error -> {
@@ -98,7 +92,8 @@ fun HomeContent(
     user: User,
     calendarListState: HomeState<List<Calendar>>,
     viewModel: HomeViewModel,
-    navigation: (String) -> Unit
+    navigation: (String) -> Unit,
+    navController: NavHostController
 ) {
     var showDialog by remember { mutableStateOf(false) }
     val calendarName: String by viewModel.calendarName.collectAsState()
@@ -122,7 +117,7 @@ fun HomeContent(
             }
         },
         bottomBar = {
-            BottomNavigationBar()
+            BottomNavigationBar(navController)
 
         },
         floatingActionButton = {
@@ -232,30 +227,6 @@ fun CalendarItem(name: String, description: String, id: String, navigation: (Str
                     fontWeight = FontWeight.Bold
                 )
             }
-        }
-    }
-}
-
-@Composable
-fun BottomNavigationBar() {
-    val topLevelRoutes = listOf(
-        TopLevelRoute("Home", Route.HomeScreen, Icons.Default.Home),
-        TopLevelRoute("Perfil", Route.HomeScreen, Icons.Default.AccountCircle),
-    )
-
-    val selected = rememberSaveable {
-        mutableIntStateOf(0)
-    }
-
-    NavigationBar (
-    ) {
-        topLevelRoutes.forEachIndexed { index, topLevelRoute ->
-            NavigationBarItem(
-                selected = selected.intValue == index,
-                onClick = {},
-                icon = { Icon(topLevelRoute.icon, contentDescription = topLevelRoute.name) },
-                label = { Text(topLevelRoute.name) }
-            )
         }
     }
 }

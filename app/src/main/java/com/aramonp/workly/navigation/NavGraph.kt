@@ -13,11 +13,17 @@ import com.aramonp.workly.presentation.screen.login.LogInScreen
 import com.aramonp.workly.presentation.screen.login.LogInViewModel
 import com.aramonp.workly.presentation.screen.signup.SignUpScreen
 import com.aramonp.workly.presentation.screen.calendar.CalendarScreen
+import com.aramonp.workly.presentation.screen.settings.SettingsScreen
 import com.aramonp.workly.presentation.screen.signup.SignUpViewModel
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun NavGraph(navHostController: NavHostController, startDestination: String) {
+    val items = listOf(
+        BottomNavigationItem.Home,
+        BottomNavigationItem.Settings
+    )
+
     NavHost(navController = navHostController, startDestination = startDestination) {
         composable(Route.LogInScreen.route) {
             val logInViewModel: LogInViewModel = hiltViewModel()
@@ -39,8 +45,12 @@ fun NavGraph(navHostController: NavHostController, startDestination: String) {
             val homeViewModel: HomeViewModel = hiltViewModel()
             HomeScreen(
                 onNavigateToCalendar = { navHostController.navigate(Route.CalendarScreen.route) },
+                navHostController,
                 viewModel = homeViewModel
             )
+        }
+        composable(Route.Settings.route) {
+            SettingsScreen(navHostController)
         }
         composable(Route.CalendarScreen.route) { backStackEntry ->
             val id = backStackEntry.arguments?.getString("id") ?: ""
