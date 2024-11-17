@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aramonp.workly.R
 import com.aramonp.workly.domain.model.AuthState
+import com.aramonp.workly.presentation.component.CircularProgress
 import kotlinx.coroutines.launch
 
 @Composable
@@ -138,18 +139,7 @@ fun LogInScreen(onNavigateToSignUp: () -> Unit, onNavigateToHome: () -> Unit, vi
      */
     when (authState.value) {
         is AuthState.Loading -> {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.White),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .aspectRatio(1f)
-                )
-            }
+            CircularProgress()
         }
         is AuthState.Success -> {
             LaunchedEffect(Unit) {
