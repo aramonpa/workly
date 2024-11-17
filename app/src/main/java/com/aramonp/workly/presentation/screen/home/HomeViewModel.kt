@@ -17,6 +17,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
+    //TODO: Replace impls with interfaces ex: AuthRepositoryImpl -> AuthRepository
     private val authRepository: AuthRepositoryImpl,
     private val firestoreRepository: FirestoreRepositoryImpl
 ) : ViewModel() {

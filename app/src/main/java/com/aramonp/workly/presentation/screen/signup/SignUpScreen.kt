@@ -45,6 +45,7 @@ import androidx.navigation.NavController
 import com.aramonp.workly.R
 import com.aramonp.workly.domain.model.AuthState
 import com.aramonp.workly.domain.model.User
+import com.aramonp.workly.presentation.component.CircularProgress
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -178,18 +179,7 @@ fun SignUpScreen(onNavigateToLogIn: () -> Unit = {}, onNavigateToHome: () -> Uni
      */
     when (authState.value) {
         is AuthState.Loading -> {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.White),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .aspectRatio(1f)
-                )
-            }
+            CircularProgress()
         }
         is AuthState.Success -> {
             LaunchedEffect(Unit) {

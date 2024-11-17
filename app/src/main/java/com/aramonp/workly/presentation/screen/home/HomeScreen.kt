@@ -292,43 +292,6 @@ fun ShowDialogSurface(viewModel: HomeViewModel, name: String, description: Strin
 }
 
 @Composable
-fun ShowDialogCard(viewModel: HomeViewModel, name: String, description: String, onDismiss: () -> Unit = {}) {
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text("Nuevo calendario")
-                Spacer(modifier = Modifier.height(20.dp))
-
-                RegisterField(
-                    name,
-                    "Nombre",
-                    { value -> viewModel.onNameChange(value.trim()) },
-                    Modifier.fillMaxWidth(),
-                    KeyboardOptions(keyboardType = KeyboardType.Text)
-                )
-                RegisterField(
-                    description,
-                    "Descripción",
-                    { value -> viewModel.onDescriptionChange(value.trim()) },
-                    Modifier.fillMaxWidth(),
-                    KeyboardOptions(keyboardType = KeyboardType.Text)
-                )
-
-                Button(onClick = onDismiss) {
-                    Text("Cerrar")
-                }
-            }
-        }
-    }
-}
-
-@Composable
 fun RegisterField(
     value: String,
     label: String,

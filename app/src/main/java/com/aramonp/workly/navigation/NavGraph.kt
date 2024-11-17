@@ -1,29 +1,24 @@
 package com.aramonp.workly.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.internal.composableLambda
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.navigation
 import com.aramonp.workly.presentation.screen.home.HomeScreen
 import com.aramonp.workly.presentation.screen.home.HomeViewModel
 import com.aramonp.workly.presentation.screen.login.LogInScreen
 import com.aramonp.workly.presentation.screen.login.LogInViewModel
 import com.aramonp.workly.presentation.screen.signup.SignUpScreen
 import com.aramonp.workly.presentation.screen.calendar.CalendarScreen
-import com.aramonp.workly.presentation.screen.settings.SettingsScreen
+import com.aramonp.workly.presentation.screen.profile.ProfileScreen
+import com.aramonp.workly.presentation.screen.profile.ProfileViewModel
+import com.aramonp.workly.presentation.screen.profile.settings.SettingsScreen
+import com.aramonp.workly.presentation.screen.profile.settings.SettingsViewModel
 import com.aramonp.workly.presentation.screen.signup.SignUpViewModel
-import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun NavGraph(navHostController: NavHostController, startDestination: String) {
-    val items = listOf(
-        BottomNavigationItem.Home,
-        BottomNavigationItem.Settings
-    )
-
     NavHost(navController = navHostController, startDestination = startDestination) {
         composable(Route.LogInScreen.route) {
             val logInViewModel: LogInViewModel = hiltViewModel()
@@ -49,8 +44,19 @@ fun NavGraph(navHostController: NavHostController, startDestination: String) {
                 viewModel = homeViewModel
             )
         }
-        composable(Route.Settings.route) {
-            SettingsScreen(navHostController)
+        composable(Route.ProfileScreen.route) {
+            val profileViewModel: ProfileViewModel = hiltViewModel()
+            ProfileScreen(
+                navHostController,
+                viewModel = profileViewModel
+                )
+        }
+        composable(Route.SettingsScreen.route) {
+            val settingsViewModel: SettingsViewModel = hiltViewModel()
+            SettingsScreen(
+                navHostController,
+                viewModel = settingsViewModel
+            )
         }
         composable(Route.CalendarScreen.route) { backStackEntry ->
             val id = backStackEntry.arguments?.getString("id") ?: ""

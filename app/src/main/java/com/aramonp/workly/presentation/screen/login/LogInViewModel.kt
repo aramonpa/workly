@@ -20,7 +20,7 @@ import javax.inject.Inject
 class LogInViewModel @Inject constructor(
     private val authRepository: AuthRepositoryImpl
 ) : ViewModel() {
-    private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
+    private val _authState = MutableStateFlow<AuthState>(AuthState.Unauthenticated)
     val authState: StateFlow<AuthState> = _authState
 
     private val _email = MutableStateFlow("")
@@ -64,6 +64,6 @@ class LogInViewModel @Inject constructor(
     }
 
     private fun isPasswordValid(password: String): Boolean {
-        return password.length > 8
+        return password.length >= 8
     }
 }
