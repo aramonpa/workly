@@ -1,11 +1,12 @@
 package com.aramonp.workly.domain.model
 
+import com.google.firebase.Timestamp
+
 data class Event(
-    val id: String,
     val title: String,
-    val date: String,
-    val time: String,
-    val location: String,
     val description: String,
-    val participants: List<String>
+    val startDate: Timestamp,
+    val endDate: Timestamp,
+    val location: String,
+    val participant: String
 )

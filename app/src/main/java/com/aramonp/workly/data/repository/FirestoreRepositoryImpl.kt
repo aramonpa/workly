@@ -6,8 +6,10 @@ import com.aramonp.workly.domain.model.User
 import com.aramonp.workly.domain.model.toMap
 import com.aramonp.workly.domain.repository.FirestoreRepository
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
+import java.time.LocalDate
 import javax.inject.Inject
 
 class FirestoreRepositoryImpl @Inject constructor(
@@ -45,7 +47,6 @@ class FirestoreRepositoryImpl @Inject constructor(
                     .toObject(User::class.java)
             )
         } catch (e: Exception) {
-            val t = e.message
             Result.failure(Exception("Ocurrió un error al obtener el usuario"))
         }
     }
@@ -63,6 +64,20 @@ class FirestoreRepositoryImpl @Inject constructor(
 
     override suspend fun deleteUser(id: String): Result<User> {
         TODO("Not yet implemented")
+    }
+
+    override suspend fun getCalendar(calendarId: String): Result<Calendar?> {
+        return try {
+            Result.success(
+                firebaseFirestore.collection("calendars")
+                    .document(calendarId)
+                    .get()
+                    .await()
+                    .toObject(Calendar::class.java)
+            )
+        } catch (e: Exception) {
+            Result.failure(Exception("Ocurrió un error al obtener el calendario"))
+        }
     }
 
     override suspend fun createCalendar(calendar: Calendar): Result<String> {
@@ -104,17 +119,51 @@ class FirestoreRepositoryImpl @Inject constructor(
             createdAt = getTimestamp("createdAt")!!,
             updatedAt = getTimestamp("updatedAt"),
             members = (get("members") as? List<*>)?.mapNotNull { it as? String }!!,
-            events = (get("events") as? List<*>)?.mapNotNull { it as? Event }
+            teams = (get("teams") as? List<*>)?.mapNotNull { it as? String }!!,
+            //events = (get("events") as? List<*>)?.mapNotNull { it as? Event }!!
         )
     }
 
-
-    override suspend fun createEvent(event: Event): Result<Event> {
-        TODO("Not yet implemented")
+    override suspend fun updateCalendar(calendarId: String, calendarMap: Map<String, Any>): Result<Boolean> {
+        return try {
+            firebaseFirestore.collection("calendars")
+                .document(calendarId)
+                .update(calendarMap)
+            Result.success(true)
+        } catch (e: Exception) {
+            Result.failure(Exception("Ocurrió un error al obtener el usuario"))
+        }
     }
 
-    override suspend fun getAllEventsByCalendar(calendarId: String): Result<List<User>> {
-        TODO("Not yet implemented")
+    override suspend fun addEvent(calendarId: String, event: Event): Result<Event> {
+        return try {
+            firebaseFirestore.collection("calendars")
+                .document(calendarId)
+                .collection("events")
+                .add(event).await()
+
+            Result.success(event)
+        } catch (e: Exception) {
+            val edd = 1
+            Result.failure(Exception("Ocurrió un error al agregar el evento: ${e.message}", e))
+        }
+    }
+
+    override suspend fun getAllEventsByDay(calendarId: String, date: LocalDate): Result<List<Event>> {
+        return try {
+            val calendarSnapshot = firebaseFirestore.collection("calendars")
+                .document(calendarId)
+                .get()
+                .await()
+
+            val events = calendarSnapshot.toObject(Calendar::class.java)?.events ?: emptyList()
+
+            // Filtrar los eventos por fecha
+            val filteredEvents = events.filter { it.startDate.toDate().equals(date) }
+            Result.success(filteredEvents)
+        } catch (e: Exception) {
+            Result.failure(Exception("Ocurrió un error al obtener los eventos: ${e.message}", e))
+        }
     }
 
     override suspend fun updateEvent(event: Event): Result<Event> {
@@ -123,5 +172,26 @@ class FirestoreRepositoryImpl @Inject constructor(
 
     override suspend fun deleteEvent(event: Event): Result<Event> {
         TODO("Not yet implemented")
+    }
+
+    override suspend fun addTeamToCalendar(calendarId: String, teamName: String): Result<String> {
+        return try {
+            firebaseFirestore.collection("calendars")
+                .document(calendarId)
+                .update("teams", FieldValue.arrayUnion(teamName))
+            Result.success(teamName)
+        } catch (e: Exception) {
+            Result.failure(Exception("Ocurrió un error al obtener el usuario"))
+        }
+    }
+    override suspend fun deleteTeamToCalendar(calendarId: String, teamName: String): Result<String> {
+        return try {
+            firebaseFirestore.collection("calendars")
+                .document(calendarId)
+                .update("teams", FieldValue.arrayRemove(teamName))
+            Result.success(teamName)
+        } catch (e: Exception) {
+            Result.failure(Exception("Ocurrió un error al obtener el usuario"))
+        }
     }
 }

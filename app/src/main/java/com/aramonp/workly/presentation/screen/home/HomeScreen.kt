@@ -54,6 +54,7 @@ import com.aramonp.workly.R
 import com.aramonp.workly.domain.model.Calendar
 import com.aramonp.workly.domain.model.HomeState
 import com.aramonp.workly.domain.model.User
+import com.aramonp.workly.navigation.Route
 import com.aramonp.workly.presentation.component.BottomNavigationBar
 import kotlinx.coroutines.launch
 
@@ -143,7 +144,7 @@ fun HomeContent(
                         .padding(top = 16.dp, start = 16.dp, end = 16.dp),
                     calendarListState.data.size,
                     calendarListState.data,
-                    navigation
+                    navController
                 )
             }
             is HomeState.Error -> {
@@ -158,7 +159,7 @@ fun CalendarList(
     modifier: Modifier = Modifier,
     calendarNum: Int,
     calendarList: List<Calendar>,
-    navigation: (String) -> Unit) {
+    navController: NavHostController) {
     Column (modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth()
@@ -191,7 +192,7 @@ fun CalendarList(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(calendarList) { item ->
-                    CalendarItem(item.name, item.description, item.uid, navigation)
+                    CalendarItem(item.name, item.description, item.uid, navController)
                 }
             }
         }
@@ -199,12 +200,12 @@ fun CalendarList(
 }
 
 @Composable
-fun CalendarItem(name: String, description: String, id: String, navigation: (String) -> Unit) {
+fun CalendarItem(name: String, description: String, id: String, navController: NavHostController) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(color = Color.LightGray, shape = RoundedCornerShape(16.dp))
-            .clickable { navigation(id) }
+            .clickable { navController.navigate(Route.CalendarScreen.createRoute(id)) }
     ) {
         Column(
             modifier = Modifier.padding(16.dp)

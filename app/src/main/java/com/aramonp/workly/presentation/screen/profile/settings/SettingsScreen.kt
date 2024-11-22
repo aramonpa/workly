@@ -21,6 +21,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -55,11 +56,10 @@ fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewMode
             Column(
                 modifier = Modifier.padding(top = 32.dp)
             ) {
-                Button(
+                IconButton (
                     onClick = {
                         navController.popBackStack()
-                    },
-                    colors = ButtonDefaults.buttonColors(Color.Transparent),
+                    }
                 ) {
                     Image(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
                 }

@@ -11,8 +11,11 @@ import com.aramonp.workly.presentation.screen.login.LogInScreen
 import com.aramonp.workly.presentation.screen.login.LogInViewModel
 import com.aramonp.workly.presentation.screen.signup.SignUpScreen
 import com.aramonp.workly.presentation.screen.calendar.CalendarScreen
+import com.aramonp.workly.presentation.screen.calendar.CalendarViewModel
+import com.aramonp.workly.presentation.screen.calendar.settings.CalendarSettingsScreen
 import com.aramonp.workly.presentation.screen.profile.ProfileScreen
 import com.aramonp.workly.presentation.screen.profile.ProfileViewModel
+import com.aramonp.workly.presentation.screen.profile.settings.CalendarSettingsViewModel
 import com.aramonp.workly.presentation.screen.profile.settings.SettingsScreen
 import com.aramonp.workly.presentation.screen.profile.settings.SettingsViewModel
 import com.aramonp.workly.presentation.screen.signup.SignUpViewModel
@@ -58,9 +61,19 @@ fun NavGraph(navHostController: NavHostController, startDestination: String) {
                 viewModel = settingsViewModel
             )
         }
-        composable(Route.CalendarScreen.route) { backStackEntry ->
+        composable(Route.CalendarSettingsScreen.route) { backStackEntry ->
+            val settingsViewModel: CalendarSettingsViewModel = hiltViewModel()
             val id = backStackEntry.arguments?.getString("id") ?: ""
-            CalendarScreen(id = id)
+            CalendarSettingsScreen(
+                id = id,
+                navHostController,
+                viewModel = settingsViewModel
+            )
+        }
+        composable(Route.CalendarScreen.route) { backStackEntry ->
+            val calendarViewModel: CalendarViewModel = hiltViewModel()
+            val id = backStackEntry.arguments?.getString("id") ?: ""
+            CalendarScreen(id = id, calendarViewModel, navHostController)
         }
     }
 }
