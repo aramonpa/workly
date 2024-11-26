@@ -20,8 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -52,8 +50,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
 import com.aramonp.workly.R
 import com.aramonp.workly.domain.model.Calendar
-import com.aramonp.workly.domain.model.HomeState
+import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.domain.model.User
+import com.aramonp.workly.navigation.Route
 import com.aramonp.workly.presentation.component.BottomNavigationBar
 import kotlinx.coroutines.launch
 
@@ -63,7 +62,7 @@ fun HomeScreen(onNavigateToCalendar: (String) -> Unit, navController: NavHostCon
     val calendarListState = viewModel.calendarListState.collectAsState()
 
     when (userState.value) {
-        is HomeState.Loading -> {
+        is UiState.Loading -> {
             Box(
                 modifier = Modifier
                     .fillMaxSize(),
@@ -72,16 +71,16 @@ fun HomeScreen(onNavigateToCalendar: (String) -> Unit, navController: NavHostCon
                 CircularProgressIndicator()
             }
         }
-        is HomeState.Success -> {
+        is UiState.Success -> {
             HomeContent(
-                (userState.value as HomeState.Success<User>).data,
+                (userState.value as UiState.Success<User>).data,
                 calendarListState.value,
                 viewModel,
                 onNavigateToCalendar,
                 navController
             )
         }
-        is HomeState.Error -> {
+        is UiState.Error -> {
             Text("Error al cargar.", textAlign = TextAlign.Center)
         }
     }
@@ -90,7 +89,7 @@ fun HomeScreen(onNavigateToCalendar: (String) -> Unit, navController: NavHostCon
 @Composable
 fun HomeContent(
     user: User,
-    calendarListState: HomeState<List<Calendar>>,
+    calendarListState: UiState<List<Calendar>>,
     viewModel: HomeViewModel,
     navigation: (String) -> Unit,
     navController: NavHostController
@@ -133,20 +132,20 @@ fun HomeContent(
         }
 
         when (calendarListState) {
-            is HomeState.Loading -> {
+            is UiState.Loading -> {
                 CircularProgressIndicator()
             }
-            is HomeState.Success  -> {
+            is UiState.Success  -> {
                 CalendarList(
                     Modifier
                         .padding(it)
                         .padding(top = 16.dp, start = 16.dp, end = 16.dp),
                     calendarListState.data.size,
                     calendarListState.data,
-                    navigation
+                    navController
                 )
             }
-            is HomeState.Error -> {
+            is UiState.Error -> {
                 Text(text = calendarListState.message)
             }
         }
@@ -158,7 +157,7 @@ fun CalendarList(
     modifier: Modifier = Modifier,
     calendarNum: Int,
     calendarList: List<Calendar>,
-    navigation: (String) -> Unit) {
+    navController: NavHostController) {
     Column (modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth()
@@ -191,7 +190,7 @@ fun CalendarList(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(calendarList) { item ->
-                    CalendarItem(item.name, item.description, item.uid, navigation)
+                    CalendarItem(item.name, item.description, item.uid, navController)
                 }
             }
         }
@@ -199,12 +198,12 @@ fun CalendarList(
 }
 
 @Composable
-fun CalendarItem(name: String, description: String, id: String, navigation: (String) -> Unit) {
+fun CalendarItem(name: String, description: String, id: String, navController: NavHostController) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(color = Color.LightGray, shape = RoundedCornerShape(16.dp))
-            .clickable { navigation(id) }
+            .clickable { navController.navigate(Route.CalendarScreen.createRoute(id)) }
     ) {
         Column(
             modifier = Modifier.padding(16.dp)

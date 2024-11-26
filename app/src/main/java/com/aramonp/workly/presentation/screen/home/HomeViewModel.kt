@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.aramonp.workly.data.repository.AuthRepositoryImpl
 import com.aramonp.workly.data.repository.FirestoreRepositoryImpl
 import com.aramonp.workly.domain.model.Calendar
-import com.aramonp.workly.domain.model.HomeState
+import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.domain.model.User
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseUser
@@ -21,11 +21,11 @@ class HomeViewModel @Inject constructor(
     private val authRepository: AuthRepositoryImpl,
     private val firestoreRepository: FirestoreRepositoryImpl
 ) : ViewModel() {
-    private val _userState = MutableStateFlow<HomeState<User>>(HomeState.Loading)
-    val userState: StateFlow<HomeState<User>> = _userState
+    private val _userState = MutableStateFlow<UiState<User>>(UiState.Loading)
+    val userState: StateFlow<UiState<User>> = _userState
 
-    private val _calendarListState = MutableStateFlow<HomeState<List<Calendar>>>(HomeState.Loading)
-    val calendarListState: StateFlow<HomeState<List<Calendar>>> = _calendarListState
+    private val _calendarListState = MutableStateFlow<UiState<List<Calendar>>>(UiState.Loading)
+    val calendarListState: StateFlow<UiState<List<Calendar>>> = _calendarListState
 
     private val _calendarList = MutableStateFlow<List<Calendar>>(emptyList())
 
@@ -40,13 +40,13 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun fetchUser() {
-        _userState.value = HomeState.Loading
+        _userState.value = UiState.Loading
         viewModelScope.launch {
             val authResult = authRepository.getCurrentUser()
             authResult.fold(
                 onSuccess = { user -> handleUser(user) },
                 onFailure = { error ->
-                    HomeState.Error(error.message.orEmpty())
+                    UiState.Error(error.message.orEmpty())
                 }
             )
         }
@@ -59,7 +59,7 @@ class HomeViewModel @Inject constructor(
                     fetchUserCalendars(uid, user!!)
                 }
                 .onFailure { error ->
-                    HomeState.Error(error.message.orEmpty())
+                    UiState.Error(error.message.orEmpty())
                 }
         }
     }
@@ -69,11 +69,11 @@ class HomeViewModel @Inject constructor(
         calendarResult
             .onSuccess { calendars ->
                 _calendarList.value = calendars
-                _userState.value = HomeState.Success(user)
-                _calendarListState.value = HomeState.Success(calendars)
+                _userState.value = UiState.Success(user)
+                _calendarListState.value = UiState.Success(calendars)
             }
             .onFailure { error ->
-                _userState.value = HomeState.Error(error.message.orEmpty())
+                _userState.value = UiState.Error(error.message.orEmpty())
             }
     }
 
@@ -87,7 +87,7 @@ class HomeViewModel @Inject constructor(
     }
 
     suspend fun createCalendar() {
-        //_calendarListState.value = HomeState.Loading
+        //_calendarListState.value = UiState.Loading
 
         if (_calendarName.value.isNotEmpty()) {
             val currentUser = authRepository.getCurrentUser().getOrNull()
@@ -106,9 +106,9 @@ class HomeViewModel @Inject constructor(
                     .onSuccess {
                         calendar.uid = it
                         _calendarList.value += calendar
-                        _calendarListState.value = HomeState.Success(_calendarList.value)
+                        _calendarListState.value = UiState.Success(_calendarList.value)
                     }
-                    .onFailure { _calendarListState.value = HomeState.Error(it.message.orEmpty()) }
+                    .onFailure { _calendarListState.value = UiState.Error(it.message.orEmpty()) }
             }
         }
     }
