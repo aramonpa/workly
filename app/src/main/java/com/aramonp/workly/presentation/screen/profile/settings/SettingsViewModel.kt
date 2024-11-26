@@ -4,10 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aramonp.workly.data.repository.AuthRepositoryImpl
 import com.aramonp.workly.data.repository.FirestoreRepositoryImpl
-import com.aramonp.workly.domain.model.HomeState
+import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.domain.model.User
-import com.aramonp.workly.domain.repository.AuthRepository
-import com.aramonp.workly.domain.repository.FirestoreRepository
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,8 +19,8 @@ class SettingsViewModel @Inject constructor(
     private val authRepository: AuthRepositoryImpl,
     private val firestoreRepository: FirestoreRepositoryImpl
 ) : ViewModel() {
-    private val _settingsState = MutableStateFlow<HomeState<User>>(HomeState.Loading)
-    val settingsState: StateFlow<HomeState<User>> = _settingsState
+    private val _settingsState = MutableStateFlow<UiState<User>>(UiState.Loading)
+    val settingsState: StateFlow<UiState<User>> = _settingsState
 
     private val _name = MutableStateFlow("")
     val name: StateFlow<String> = _name
@@ -60,7 +58,7 @@ class SettingsViewModel @Inject constructor(
             authResult
                 .onSuccess { user -> handleUser(user) }
                 .onFailure { error ->
-                    HomeState.Error(error.message.orEmpty())
+                    UiState.Error(error.message.orEmpty())
                 }
         }
     }
@@ -70,10 +68,10 @@ class SettingsViewModel @Inject constructor(
             _uid.value = uid
             getUserInfo(uid)
                 .onSuccess { user ->
-                    _settingsState.value = HomeState.Success(user!!)
+                    _settingsState.value = UiState.Success(user!!)
                 }
                 .onFailure { error ->
-                    HomeState.Error(error.message.orEmpty())
+                    UiState.Error(error.message.orEmpty())
                 }
         }
     }
@@ -85,9 +83,9 @@ class SettingsViewModel @Inject constructor(
     private fun onUserFieldChange(fieldUpdater: (User) -> User) {
         _settingsState.value = _settingsState.value.let {
             when (it) {
-                is HomeState.Success -> {
+                is UiState.Success -> {
                     val updatedUser = fieldUpdater(it.data)
-                    HomeState.Success(updatedUser)
+                    UiState.Success(updatedUser)
                 }
                 else -> it
             }
@@ -95,7 +93,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     suspend fun updateUserInfo() {
-        val state = (settingsState.value as HomeState.Success<User>)
+        val state = (settingsState.value as UiState.Success<User>)
         viewModelScope.launch {
             firestoreRepository.updateUser(
                 _uid.value,

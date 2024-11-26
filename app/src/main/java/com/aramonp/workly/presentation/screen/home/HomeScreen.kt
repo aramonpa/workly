@@ -20,8 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -52,7 +50,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
 import com.aramonp.workly.R
 import com.aramonp.workly.domain.model.Calendar
-import com.aramonp.workly.domain.model.HomeState
+import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.domain.model.User
 import com.aramonp.workly.navigation.Route
 import com.aramonp.workly.presentation.component.BottomNavigationBar
@@ -64,7 +62,7 @@ fun HomeScreen(onNavigateToCalendar: (String) -> Unit, navController: NavHostCon
     val calendarListState = viewModel.calendarListState.collectAsState()
 
     when (userState.value) {
-        is HomeState.Loading -> {
+        is UiState.Loading -> {
             Box(
                 modifier = Modifier
                     .fillMaxSize(),
@@ -73,16 +71,16 @@ fun HomeScreen(onNavigateToCalendar: (String) -> Unit, navController: NavHostCon
                 CircularProgressIndicator()
             }
         }
-        is HomeState.Success -> {
+        is UiState.Success -> {
             HomeContent(
-                (userState.value as HomeState.Success<User>).data,
+                (userState.value as UiState.Success<User>).data,
                 calendarListState.value,
                 viewModel,
                 onNavigateToCalendar,
                 navController
             )
         }
-        is HomeState.Error -> {
+        is UiState.Error -> {
             Text("Error al cargar.", textAlign = TextAlign.Center)
         }
     }
@@ -91,7 +89,7 @@ fun HomeScreen(onNavigateToCalendar: (String) -> Unit, navController: NavHostCon
 @Composable
 fun HomeContent(
     user: User,
-    calendarListState: HomeState<List<Calendar>>,
+    calendarListState: UiState<List<Calendar>>,
     viewModel: HomeViewModel,
     navigation: (String) -> Unit,
     navController: NavHostController
@@ -134,10 +132,10 @@ fun HomeContent(
         }
 
         when (calendarListState) {
-            is HomeState.Loading -> {
+            is UiState.Loading -> {
                 CircularProgressIndicator()
             }
-            is HomeState.Success  -> {
+            is UiState.Success  -> {
                 CalendarList(
                     Modifier
                         .padding(it)
@@ -147,7 +145,7 @@ fun HomeContent(
                     navController
                 )
             }
-            is HomeState.Error -> {
+            is UiState.Error -> {
                 Text(text = calendarListState.message)
             }
         }

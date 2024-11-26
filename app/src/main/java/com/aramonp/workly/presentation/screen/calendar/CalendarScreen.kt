@@ -1,8 +1,5 @@
 package com.aramonp.workly.presentation.screen.calendar
 
-import android.app.TimePickerDialog
-import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -34,8 +30,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
@@ -54,7 +51,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
@@ -72,49 +68,45 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.aramonp.workly.R
 import com.aramonp.workly.domain.model.Calendar
 import com.aramonp.workly.domain.model.Event
-import com.aramonp.workly.domain.model.HomeState
+import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.navigation.Route
-import com.aramonp.workly.presentation.screen.home.CalendarItem
-import com.aramonp.workly.presentation.screen.home.HomeViewModel
+import com.aramonp.workly.presentation.component.AlertDialogTask
 import com.aramonp.workly.presentation.screen.home.RegisterField
 import com.aramonp.workly.util.combineDateAndTime
 import com.aramonp.workly.util.convertMillisToDate
 import com.aramonp.workly.util.getTimeFromTimeStamp
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.YearMonth
-import java.util.Date
 import java.util.Locale
 
 @Composable
-fun CalendarScreen(id: String, viewModel: CalendarViewModel, navController: NavHostController) {
+fun CalendarScreen(calendarId: String, viewModel: CalendarViewModel, navController: NavHostController) {
     var showDialog by rememberSaveable { mutableStateOf(false) }
     val calendarState = viewModel.calendarState.collectAsState()
+    val eventsState = viewModel.eventsState.collectAsState()
 
-    LaunchedEffect(id) {
-        if (id.isNotEmpty()) {
-            viewModel.fetchCalendar(id)
+    LaunchedEffect(calendarId) {
+        if (calendarId.isNotEmpty()) {
+            viewModel.fetchCalendar(calendarId)
+            viewModel.fetchEvents()
         }
     }
 
     Scaffold(
         topBar = {
-            CalendarTopBar(id, navController)
+            CalendarTopBar(calendarId, viewModel, navController)
         },
         floatingActionButton = {
             FloatingActionButton(
@@ -125,7 +117,7 @@ fun CalendarScreen(id: String, viewModel: CalendarViewModel, navController: NavH
         }
     ) {
         when (val state = calendarState.value) {
-            is HomeState.Success -> {
+            is UiState.Success -> {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -136,12 +128,27 @@ fun CalendarScreen(id: String, viewModel: CalendarViewModel, navController: NavH
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
-                    EventContent(
-                        Modifier
-                            .padding(it)
-                            .padding(top = 16.dp, start = 16.dp, end = 16.dp),
-                        state.data.events
-                    )
+                    when (val events = eventsState.value) {
+                        is UiState.Success -> {
+                            if (events.data.isNullOrEmpty()) {
+                                Text("No hay eventos para este día.")
+                            } else {
+                                EventContent(
+                                    Modifier
+                                        .padding(top = 16.dp, start = 16.dp, end = 16.dp),
+                                    events.data
+                                ) { eventId ->
+                                    navController.navigate(
+                                        Route.EventScreen.createRoute(
+                                            calendarId,
+                                            eventId
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                        else -> Unit
+                    }
 
                     if (showDialog) {
                         ShowDialogSurface(
@@ -152,7 +159,7 @@ fun CalendarScreen(id: String, viewModel: CalendarViewModel, navController: NavH
                     }
                 }
             }
-            is HomeState.Error -> {
+            is UiState.Error -> {
                 Text(state.message)
             }
             else -> Unit
@@ -162,8 +169,10 @@ fun CalendarScreen(id: String, viewModel: CalendarViewModel, navController: NavH
 }
 
 @Composable
-fun CalendarTopBar(id: String, navController: NavHostController) {
+fun CalendarTopBar(id: String, viewModel: CalendarViewModel, navController: NavHostController) {
     var expanded by remember { mutableStateOf(false) }
+    val showAlertDialog = remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     Row(
         modifier = Modifier
@@ -172,7 +181,7 @@ fun CalendarTopBar(id: String, navController: NavHostController) {
     ) {
         IconButton (
             onClick = {
-
+                navController.popBackStack()
             }
         ) {
             Image(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
@@ -193,9 +202,35 @@ fun CalendarTopBar(id: String, navController: NavHostController) {
             ) {
                 DropdownMenuItem(
                     text = { Text("Ajustes") },
-                    onClick = { navController.navigate(Route.CalendarSettingsScreen.createRoute(id)) }
+                    onClick = {
+                        expanded = false
+                        navController.navigate(Route.CalendarSettingsScreen.createRoute(id))
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Eliminar") },
+                    onClick = {
+                        expanded = false
+                        showAlertDialog.value = true
+                    }
                 )
             }
+        }
+        if (showAlertDialog.value) {
+            AlertDialogTask(
+                onDismissRequest = { showAlertDialog.value = false },
+                onConfirmation = {
+                    coroutineScope.launch {
+                        viewModel.deleteCalendar()
+                        showAlertDialog.value = false
+                        navController.popBackStack()
+                    }
+                },
+                dialogTitle = "¿Está seguro?",
+                dialogText = "La operación de eliminar un calendario no se puede deshacer.",
+                icon = Icons.Default.Info,
+                iconDescription = "Aviso"
+            )
         }
     }
 }
@@ -205,6 +240,7 @@ fun CalendarContent(viewModel: CalendarViewModel) {
     val currentMonth = viewModel.currentMonth
     val selectedDate = viewModel.selectedDate
     val daysInMonth = viewModel.getDaysInMonth()
+    val coroutineScope = rememberCoroutineScope()
 
     MonthNavigation(
         monthName = viewModel.getCurrentMonthName(),
@@ -223,8 +259,20 @@ fun CalendarContent(viewModel: CalendarViewModel) {
         contentPadding = PaddingValues(4.dp)
     ) {
         items(daysInMonth) { day ->
-            DayItem(day = day, selected = selectedDate == day) {
-                viewModel.selectedDate = day  // Cambiar la fecha seleccionada desde el ViewModel
+            val textColor = when {
+                day.month != currentMonth.month -> Color.Gray
+                selectedDate == day -> Color.White
+                else -> Color.Black
+            }
+
+            DayItem(
+                day = day,
+                selected = selectedDate == day,
+                color = textColor
+            ) {
+                coroutineScope.launch {
+                    viewModel.changeSelectedDay(day)  // Cambiar la fecha seleccionada desde el ViewModel
+                }
             }
         }
     }
@@ -284,7 +332,7 @@ fun WeekdaysHeader() {
 }
 
 @Composable
-fun DayItem(day: LocalDate, selected: Boolean, onClick: () -> Unit) {
+fun DayItem(day: LocalDate, color: Color, selected: Boolean, onClick: () -> Unit) {
     val backgroundColor = if (selected) Color.Gray else Color.Transparent
     Box(
         contentAlignment = Alignment.Center,
@@ -297,7 +345,7 @@ fun DayItem(day: LocalDate, selected: Boolean, onClick: () -> Unit) {
         Text(
             text = day.dayOfMonth.toString(),
             style = MaterialTheme.typography.bodyMedium,
-            color = if (selected) Color.White else Color.Black
+            color = color
         )
     }
 }
@@ -368,7 +416,7 @@ fun EventForm(viewModel: CalendarViewModel, calendar: Calendar, onDismiss: () ->
 
         DatePickerField(
             value = selectedEndDate,
-            label = "Fecha de inicio",
+            label = "Fecha fin",
             onDateSelected = { date ->
                 selectedEndDate = date
             }
@@ -376,14 +424,14 @@ fun EventForm(viewModel: CalendarViewModel, calendar: Calendar, onDismiss: () ->
 
         TimePickerField(
             value = selectedEndTime,
-            label = "Hora de inicio",
+            label = "Hora fin",
             onTimeSelected = { time ->
                 selectedEndTime = time
             }
         )
 
         RegisterField(
-            description,
+            location,
             "Localización",
             { location = it },
             Modifier.fillMaxWidth(),
@@ -411,7 +459,7 @@ fun EventForm(viewModel: CalendarViewModel, calendar: Calendar, onDismiss: () ->
                             combineDateAndTime(selectedEndDate, selectedEndTime),
                             selectedTeam
                         )
-
+                        onDismiss()
                     }
                 }
             ) {
@@ -551,7 +599,6 @@ fun TimePickerField(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DropDownMenu(teams: List<String>, onItemSelected: (String) -> Unit) {
-    val coffeeDrinks = arrayOf("Americano", "Cappuccino", "Espresso", "Latte", "Mocha")
     var expanded by remember { mutableStateOf(false) }
     var selectedText by remember { mutableStateOf("") }
 
@@ -597,7 +644,7 @@ fun DropDownMenu(teams: List<String>, onItemSelected: (String) -> Unit) {
 }
 
 @Composable
-fun EventContent(modifier: Modifier, eventList: List<Event>) {
+fun EventContent(modifier: Modifier, eventList: List<Event>, onEventClicked: (String) -> Unit) {
     Column (modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth()
@@ -631,10 +678,12 @@ fun EventContent(modifier: Modifier, eventList: List<Event>) {
             ) {
                 items(eventList) { item ->
                     EventItem(
+                        item.uid,
                         item.title,
                         item.description,
-                        item.participant,
-                        "${getTimeFromTimeStamp(item.startDate)} - ${getTimeFromTimeStamp(item.endDate)}"
+                        item.assignee,
+                        "${getTimeFromTimeStamp(item.startDate)} - ${getTimeFromTimeStamp(item.endDate)}",
+                        onEventClicked
                         )
                 }
             }
@@ -643,12 +692,12 @@ fun EventContent(modifier: Modifier, eventList: List<Event>) {
 }
 
 @Composable
-fun EventItem(name: String, description: String, team: String, timeSlot: String) {
+fun EventItem(uid: String, name: String, description: String, team: String, timeSlot: String, onEventClicked: (String) -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(color = Color.LightGray, shape = RoundedCornerShape(16.dp))
-            .clickable {  }
+            .clickable { onEventClicked(uid) }
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -671,8 +720,15 @@ fun EventItem(name: String, description: String, team: String, timeSlot: String)
                     fontWeight = FontWeight.Bold
                 )
             }
-            Row {
+            Row (
+                modifier = Modifier.padding(top = 2.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null
+                )
                 Text(
+                    modifier = Modifier.padding(start = 4.dp),
                     text = team,
                     fontSize = 15.sp
                 )

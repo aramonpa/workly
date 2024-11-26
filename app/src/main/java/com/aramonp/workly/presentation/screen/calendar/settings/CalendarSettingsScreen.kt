@@ -20,9 +20,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -44,10 +46,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
-import com.aramonp.workly.domain.model.HomeState
+import com.aramonp.workly.domain.model.UiState
+import com.aramonp.workly.presentation.component.AlertDialogTask
 import com.aramonp.workly.presentation.component.CircularProgress
-import com.aramonp.workly.presentation.screen.home.CalendarItem
-import com.aramonp.workly.presentation.screen.home.HomeViewModel
+import com.aramonp.workly.presentation.component.LabeledField
+import com.aramonp.workly.presentation.component.OutlinedTextFieldDialog
 import com.aramonp.workly.presentation.screen.home.RegisterField
 import kotlinx.coroutines.launch
 
@@ -55,7 +58,6 @@ import kotlinx.coroutines.launch
 fun CalendarSettingsScreen(id: String, navController: NavHostController, viewModel: CalendarSettingsViewModel) {
     val coroutineScope = rememberCoroutineScope()
     var showDialog by remember { mutableStateOf(false) }
-
 
     LaunchedEffect(id) {
         if (id.isNotEmpty()) {
@@ -81,53 +83,60 @@ fun CalendarSettingsScreen(id: String, navController: NavHostController, viewMod
         }
     ) {
         when (val state = settingsState.value) {
-            is HomeState.Loading -> {
+            is UiState.Loading -> {
                 CircularProgress()
             }
-            is HomeState.Success<Calendar> -> {
+            is UiState.Success<Calendar> -> {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(it)
                         .padding(16.dp)
                 ) {
-                    LabeledTextField("Nombre", state.data.name) { value -> viewModel.onNameChange(value) }
+                    LabeledField(
+                        "Nombre",
+                        state.data.name
+                    ) { value ->
+                        coroutineScope.launch {
+                            viewModel.onNameChange(value)
+                            viewModel.updateCalendarInfo()
+                        }
+                    }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-                    LabeledTextField("Descripción", state.data.description) { value -> viewModel.onDescriptionChange(value) }
+                    LabeledField(
+                        "Descripción",
+                        state.data.description
+                    ) { value ->
+                        coroutineScope.launch {
+                            viewModel.onDescriptionChange(value)
+                            viewModel.updateCalendarInfo()
+                        }
+                    }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
                     TeamsList(
-                        state.data.teams,
-                        { showDialog = true },
-                        {
+                        teams = state.data.teams,
+                        onDelete = { value ->
                             coroutineScope.launch {
-                                viewModel.deleteTeam(it)
+                                viewModel.deleteTeam(value)
                             }
-                        })
-
+                        },
+                        onConfirmation = { value ->
+                            coroutineScope.launch {
+                                viewModel.addTeam(value)
+                                //viewModel.updateCalendarInfo()
+                            }
+                        }
+                    )
 
                     if (showDialog) {
                         ShowDialogSurface(
                             viewModel,
                             onDismiss = { showDialog = false })
                     }
-
-                    Spacer(modifier = Modifier.weight(1f))
-                    Button(
-                        shape = RoundedCornerShape(5.dp),
-                        onClick = {
-                            coroutineScope.launch {
-                                viewModel.updateCalendarInfo()
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                    ) {
-                        Text("Guardar")
-                    }
                 }
             }
-            is HomeState.Error -> {
-                Text(text = (settingsState.value as HomeState.Error).message)
+            is UiState.Error -> {
+                Text(text = (settingsState.value as UiState.Error).message)
             }
         }
 
@@ -135,19 +144,9 @@ fun CalendarSettingsScreen(id: String, navController: NavHostController, viewMod
 }
 
 @Composable
-fun LabeledTextField(label: String, value: String, onValueChange: (String) -> Unit) {
-    Column {
-        Text(label)
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-}
+fun TeamsList(teams: List<String>, onDelete: (String) -> Unit, onConfirmation: (String) -> Unit) {
+    val showAlertDialog = remember { mutableStateOf(false) }
 
-@Composable
-fun TeamsList(teams: List<String>, onClick: () -> Unit, onDelete: (String) -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -155,7 +154,7 @@ fun TeamsList(teams: List<String>, onClick: () -> Unit, onDelete: (String) -> Un
         Spacer(modifier = Modifier.weight(1f))
         IconButton (
             onClick = {
-                onClick()
+                showAlertDialog.value = true
             }
         ) {
             Image(imageVector = Icons.Default.Add, contentDescription = "Añadir")
@@ -171,23 +170,41 @@ fun TeamsList(teams: List<String>, onClick: () -> Unit, onDelete: (String) -> Un
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
         }
     }
+
+    if (showAlertDialog.value) {
+        OutlinedTextFieldDialog(
+            onDismissRequest = { showAlertDialog.value = false },
+            onConfirmation = { onConfirmation(it) },
+            dialogTitle = "Nuevo equipo de trabajo",
+            dialogText = ""
+        )
+    }
 }
 
 @Composable
 fun TeamItem(team: String, onDelete: (String) -> Unit) {
+    val showAlertDialog = remember { mutableStateOf(false) }
+
     Row(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(team)
         Spacer(modifier = Modifier.weight(1f))
         IconButton (
-            onClick = {
-                onDelete(team)
-            }
+            onClick = { showAlertDialog.value = true }
         ) {
             Image(imageVector = Icons.Default.Clear, contentDescription = "Eliminar")
-
         }
+    }
+    if (showAlertDialog.value) {
+        AlertDialogTask(
+            onDismissRequest = { showAlertDialog.value = false },
+            onConfirmation = { onDelete(team) },
+            dialogTitle = "¿Está seguro?",
+            dialogText = "La operación de eliminar un equipo no se puede deshacer.",
+            icon = Icons.Default.Info,
+            iconDescription = "Aviso"
+        )
     }
 }
 

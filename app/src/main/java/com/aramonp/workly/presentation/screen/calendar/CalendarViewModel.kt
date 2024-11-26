@@ -8,9 +8,9 @@ import androidx.lifecycle.viewModelScope
 import com.aramonp.workly.data.repository.FirestoreRepositoryImpl
 import com.aramonp.workly.domain.model.Calendar
 import com.aramonp.workly.domain.model.Event
-import com.aramonp.workly.domain.model.HomeState
-import com.aramonp.workly.domain.repository.FirestoreRepository
+import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.util.convertToTimestamp
+import com.google.firebase.Timestamp
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,8 +29,11 @@ class CalendarViewModel @Inject constructor(
     var selectedDate by mutableStateOf<LocalDate>(LocalDate.now())
     var currentMonth: YearMonth by mutableStateOf(YearMonth.now())
 
-    private val _calendarState = MutableStateFlow<HomeState<Calendar>>(HomeState.Loading)
-    val calendarState: StateFlow<HomeState<Calendar>> = _calendarState
+    private val _calendarState = MutableStateFlow<UiState<Calendar>>(UiState.Loading)
+    val calendarState: StateFlow<UiState<Calendar>> = _calendarState
+
+    private val _eventsState = MutableStateFlow<UiState<List<Event>?>>(UiState.Loading)
+    val eventsState: StateFlow<UiState<List<Event>?>> = _eventsState
 
     private val _calendarId = MutableStateFlow("")
 
@@ -42,9 +45,14 @@ class CalendarViewModel @Inject constructor(
         val lastDayOfMonth = currentMonth.atEndOfMonth()
         val daysInMonth = mutableListOf<LocalDate>()
 
+        val firstDayOfWeek = firstDayOfMonth.dayOfWeek.value
+
+        // Calcular cuántos días vacíos necesitamos antes del primer día del mes para que la semana comience en lunes
+        val daysBeforeFirstDay = if (firstDayOfWeek == 1) 0 else firstDayOfWeek - 1
+
         // Llenar los días vacíos hasta el primer día de la semana
-        var day = firstDayOfMonth
-        while (day.isBefore(firstDayOfMonth.withDayOfMonth(1))) {
+        var day = firstDayOfMonth.minusDays(daysBeforeFirstDay.toLong())
+        while (day.isBefore(firstDayOfMonth)) {
             daysInMonth.add(day)
             day = day.plusDays(1)
         }
@@ -55,11 +63,33 @@ class CalendarViewModel @Inject constructor(
             day = day.plusDays(1)
         }
 
+        // Calcular los días restantes del siguiente mes para completar la cuadrícula
+        val totalDaysInMonth = daysInMonth.size
+        val totalWeeks = (totalDaysInMonth + 6) / 7 // Número de filas completas de la cuadrícula
+
+        // Si el mes no llena 6 filas, agregamos los días del siguiente mes para completar la cuadrícula
+        if (totalDaysInMonth % 7 != 0) {
+            // Calcular el primer día del siguiente mes
+            val nextMonthFirstDay = currentMonth.plusMonths(1).atDay(1)
+            var nextMonthDay = nextMonthFirstDay
+
+            // Llenar los días faltantes con días del siguiente mes
+            while (daysInMonth.size < totalWeeks * 7) {
+                daysInMonth.add(nextMonthDay)
+                nextMonthDay = nextMonthDay.plusDays(1)
+            }
+        }
+
         return daysInMonth
     }
 
     fun changeMonth(newMonth: YearMonth) {
         currentMonth = newMonth
+    }
+
+    suspend fun changeSelectedDay(date: LocalDate) {
+        selectedDate = date
+        fetchEvents()
     }
 
     fun getCurrentMonthName(): String {
@@ -72,37 +102,33 @@ class CalendarViewModel @Inject constructor(
         getCalendarInfo(calendarId)
             .onSuccess { calendar ->
 
-                _calendarState.value = HomeState.Success(calendar!!)
+                _calendarState.value = UiState.Success(calendar!!)
             }
             .onFailure { error ->
-                HomeState.Error(error.message.orEmpty())
+                UiState.Error(error.message.orEmpty())
             }
     }
+
+    suspend fun fetchEvents() {
+        getEventsInfo(_calendarId.value, selectedDate)
+            .onSuccess { events ->
+                _eventsState.value = UiState.Success(events)
+            }
+            .onFailure { error ->
+                UiState.Error(error.message.orEmpty())
+            }
+    }
+
 
     private fun onCalendarFieldChange(fieldUpdater: (Calendar) -> Calendar) {
         _calendarState.value = _calendarState.value.let {
             when (it) {
-                is HomeState.Success -> {
+                is UiState.Success -> {
                     val updatedCalendar = fieldUpdater(it.data)
-                    HomeState.Success(updatedCalendar)
+                    UiState.Success(updatedCalendar)
                 }
                 else -> it
             }
-        }
-    }
-
-    private fun onEventChange(event: Event, add: Boolean) {
-        onCalendarFieldChange { calendar ->
-            val updatedEvents = calendar.events.toMutableList().apply {
-                if (add) {
-                    // Agregar el nuevo equipo, evitando duplicados
-                    if (!contains(event)) add(event)
-                } else {
-                    // Eliminar el equipo si existe
-                    remove(event)
-                }
-            }
-            calendar.copy(events = updatedEvents)
         }
     }
 
@@ -115,23 +141,36 @@ class CalendarViewModel @Inject constructor(
         team: String
     ) {
         val event = Event(
-            name,
-            description,
-            convertToTimestamp(startDate),
-            convertToTimestamp(endDate),
-            location,
-            team
+            title = name,
+            description = description,
+            startDate = convertToTimestamp(startDate),
+            endDate = convertToTimestamp(endDate),
+            createdAt = Timestamp.now(),
+            location = location,
+            assignee = team
         )
         viewModelScope.launch {
             firestoreRepository.addEvent(
                 _calendarId.value,
                 event
             )
-            //onTeamChange(teamName, true)
         }
+        //val currentEvents = (_eventsState.value as? UiState.Success)?.data.orEmpty()
+        //_eventsState.value = UiState.Success(currentEvents + event)
+        fetchEvents()
     }
 
     private suspend fun getCalendarInfo(calendarId: String): Result<Calendar?> {
         return firestoreRepository.getCalendar(calendarId)
+    }
+
+    private suspend fun getEventsInfo(calendarId: String, date: LocalDate): Result<List<Event>?> {
+        return firestoreRepository.getAllEventsByDay(calendarId, date)
+    }
+
+    suspend fun deleteCalendar() {
+        viewModelScope.launch {
+            firestoreRepository.deleteCalendar(_calendarId.value)
+        }
     }
 }

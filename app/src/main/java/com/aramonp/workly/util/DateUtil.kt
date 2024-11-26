@@ -5,6 +5,7 @@ import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Date
@@ -27,7 +28,17 @@ fun convertToTimestamp(dateTime: LocalDateTime): Timestamp {
     return Timestamp(instant.epochSecond, instant.nano)
 }
 
+fun convertLocalDateToTimestamp(date: LocalDate): Timestamp {
+    val instant = date.atStartOfDay(ZoneOffset.UTC).toInstant()
+    return Timestamp(instant.epochSecond, instant.nano)
+}
+
 fun getTimeFromTimeStamp(datetime: Timestamp): String {
-    val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+    val formatter = SimpleDateFormat("HH:mm", Locale.getDefault())
+    return formatter.format(datetime.toDate())
+}
+
+fun getDateFromTimeStamp(datetime: Timestamp): String {
+    val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     return formatter.format(datetime.toDate())
 }

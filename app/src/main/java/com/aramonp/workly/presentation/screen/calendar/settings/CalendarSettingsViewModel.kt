@@ -5,14 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.aramonp.workly.data.repository.AuthRepositoryImpl
 import com.aramonp.workly.data.repository.FirestoreRepositoryImpl
 import com.aramonp.workly.domain.model.Calendar
-import com.aramonp.workly.domain.model.HomeState
-import com.aramonp.workly.domain.model.User
-import com.aramonp.workly.domain.repository.AuthRepository
-import com.aramonp.workly.domain.repository.FirestoreRepository
+import com.aramonp.workly.domain.model.UiState
 import com.google.firebase.Timestamp
-import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -23,8 +18,8 @@ class CalendarSettingsViewModel @Inject constructor(
     private val authRepository: AuthRepositoryImpl,
     private val firestoreRepository: FirestoreRepositoryImpl
 ) : ViewModel() {
-    private val _settingsState = MutableStateFlow<HomeState<Calendar>>(HomeState.Loading)
-    val settingsState: StateFlow<HomeState<Calendar>> = _settingsState
+    private val _settingsState = MutableStateFlow<UiState<Calendar>>(UiState.Loading)
+    val settingsState: StateFlow<UiState<Calendar>> = _settingsState
 
     private val _name = MutableStateFlow("")
     val name: StateFlow<String> = _name
@@ -62,10 +57,10 @@ class CalendarSettingsViewModel @Inject constructor(
         _calendarId.value = calendarId
         getCalendarInfo(calendarId)
             .onSuccess { calendar ->
-                _settingsState.value = HomeState.Success(calendar!!)
+                _settingsState.value = UiState.Success(calendar!!)
             }
             .onFailure { error ->
-                HomeState.Error(error.message.orEmpty())
+                UiState.Error(error.message.orEmpty())
             }
     }
 
@@ -76,9 +71,9 @@ class CalendarSettingsViewModel @Inject constructor(
     private fun onCalendarFieldChange(fieldUpdater: (Calendar) -> Calendar) {
         _settingsState.value = _settingsState.value.let {
             when (it) {
-                is HomeState.Success -> {
+                is UiState.Success -> {
                     val updatedCalendar = fieldUpdater(it.data)
-                    HomeState.Success(updatedCalendar)
+                    UiState.Success(updatedCalendar)
                 }
                 else -> it
             }
@@ -86,7 +81,7 @@ class CalendarSettingsViewModel @Inject constructor(
     }
 
     suspend fun updateCalendarInfo() {
-        val state = (settingsState.value as HomeState.Success<Calendar>)
+        val state = (settingsState.value as UiState.Success<Calendar>)
         viewModelScope.launch {
             firestoreRepository.updateCalendar(
                 _calendarId.value,
