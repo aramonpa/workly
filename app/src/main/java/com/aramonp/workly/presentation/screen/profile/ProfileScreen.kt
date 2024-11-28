@@ -15,7 +15,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Scaffold
@@ -26,20 +25,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.aramonp.workly.navigation.Route
 import com.aramonp.workly.presentation.component.BottomNavigationBar
 import kotlinx.coroutines.launch
 
 @Composable
-fun ProfileScreen(navController: NavHostController, viewModel: ProfileViewModel) {
+fun ProfileScreen(navController: NavHostController, viewModel: ProfileViewModel = hiltViewModel()) {
     val notificationState = viewModel.notificationsState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
@@ -126,7 +123,9 @@ fun ProfileScreen(navController: NavHostController, viewModel: ProfileViewModel)
                 onClick = {
                     coroutineScope.launch {
                         viewModel.signOut()
-                        navController.navigate(Route.LogInScreen.route)
+                        navController.navigate(Route.LogInScreen.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
                     }
                 },
                 modifier = Modifier
@@ -137,9 +136,4 @@ fun ProfileScreen(navController: NavHostController, viewModel: ProfileViewModel)
             }
         }
     }
-}
-
-@Composable
-fun ProfileItem() {
-
 }

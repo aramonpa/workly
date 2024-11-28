@@ -10,8 +10,7 @@ data class Calendar(
     val createdAt: Timestamp? = null,
     val updatedAt: Timestamp? = null,
     val teams: List<String> = emptyList(),
-    val members: List<String> = emptyList(),
-    val events: List<Event> = emptyList()
+    val members: List<String> = emptyList()
 )
 
 fun Calendar.toMap(): Map<String, Any?> {
@@ -22,7 +21,6 @@ fun Calendar.toMap(): Map<String, Any?> {
         "createdAt" to createdAt,
         "updatedAt" to updatedAt,
         "members" to members,
-        "teams" to teams,
-        "events" to events
+        "teams" to teams
     )
 }

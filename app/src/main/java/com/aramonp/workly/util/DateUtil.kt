@@ -24,7 +24,7 @@ fun combineDateAndTime(date: String, time: String): LocalDateTime {
 }
 
 fun convertToTimestamp(dateTime: LocalDateTime): Timestamp {
-    val instant = dateTime.toInstant(ZoneOffset.UTC) // Convierte LocalDateTime a Instant
+    val instant = dateTime.toInstant(ZoneOffset.UTC)
     return Timestamp(instant.epochSecond, instant.nano)
 }
 

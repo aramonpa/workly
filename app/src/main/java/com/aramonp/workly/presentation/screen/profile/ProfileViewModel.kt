@@ -4,8 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aramonp.workly.data.repository.AuthRepositoryImpl
 import com.aramonp.workly.data.repository.DataStoreRepositoryImpl
-import com.aramonp.workly.domain.repository.AuthRepository
-import com.aramonp.workly.domain.repository.DataStoreRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

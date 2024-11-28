@@ -3,10 +3,8 @@ package com.aramonp.workly.navigation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class BottomNavigationItem(val route: String, val icon: ImageVector, val outlinedIcon: ImageVector, val title: String) {

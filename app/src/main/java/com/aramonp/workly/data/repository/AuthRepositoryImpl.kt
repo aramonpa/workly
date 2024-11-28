@@ -1,8 +1,5 @@
 package com.aramonp.workly.data.repository
 
-import androidx.lifecycle.LiveData
-import com.aramonp.workly.domain.model.AuthState
-import com.aramonp.workly.domain.model.User
 import com.aramonp.workly.domain.repository.AuthRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser

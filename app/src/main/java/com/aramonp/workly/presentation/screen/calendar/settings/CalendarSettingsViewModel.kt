@@ -6,6 +6,7 @@ import com.aramonp.workly.data.repository.AuthRepositoryImpl
 import com.aramonp.workly.data.repository.FirestoreRepositoryImpl
 import com.aramonp.workly.domain.model.Calendar
 import com.aramonp.workly.domain.model.UiState
+import com.aramonp.workly.domain.use_case.ValidateField
 import com.google.firebase.Timestamp
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,8 +16,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CalendarSettingsViewModel @Inject constructor(
-    private val authRepository: AuthRepositoryImpl,
-    private val firestoreRepository: FirestoreRepositoryImpl
+    private val firestoreRepository: FirestoreRepositoryImpl,
+    private val validateField: ValidateField
 ) : ViewModel() {
     private val _settingsState = MutableStateFlow<UiState<Calendar>>(UiState.Loading)
     val settingsState: StateFlow<UiState<Calendar>> = _settingsState
@@ -24,11 +25,19 @@ class CalendarSettingsViewModel @Inject constructor(
     private val _name = MutableStateFlow("")
     val name: StateFlow<String> = _name
 
+    private val _nameError = MutableStateFlow<String?>(null)
+    val nameError: StateFlow<String?> = _nameError
+
     private val _description = MutableStateFlow("")
     val description: StateFlow<String> = _description
 
-    private val _calendarId = MutableStateFlow("")
+    private val _descriptionError = MutableStateFlow<String?>(null)
+    val descriptionError: StateFlow<String?> = _descriptionError
 
+    private val _teamError = MutableStateFlow<String?>(null)
+    val teamError: StateFlow<String?> = _teamError
+
+    private val _calendarId = MutableStateFlow("")
 
     fun onNameChange(name: String) {
         onCalendarFieldChange { calendar -> calendar.copy(name = name) }
@@ -42,14 +51,24 @@ class CalendarSettingsViewModel @Inject constructor(
         onCalendarFieldChange { calendar ->
             val updatedTeams = calendar.teams.toMutableList().apply {
                 if (add) {
-                    // Agregar el nuevo equipo, evitando duplicados
                     if (!contains(team)) add(team)
                 } else {
-                    // Eliminar el equipo si existe
                     remove(team)
                 }
             }
             calendar.copy(teams = updatedTeams)
+        }
+    }
+
+    private fun onCalendarFieldChange(fieldUpdater: (Calendar) -> Calendar) {
+        _settingsState.value = _settingsState.value.let {
+            when (it) {
+                is UiState.Success -> {
+                    val updatedCalendar = fieldUpdater(it.data)
+                    UiState.Success(updatedCalendar)
+                }
+                else -> it
+            }
         }
     }
 
@@ -68,20 +87,13 @@ class CalendarSettingsViewModel @Inject constructor(
         return firestoreRepository.getCalendar(calendarId)
     }
 
-    private fun onCalendarFieldChange(fieldUpdater: (Calendar) -> Calendar) {
-        _settingsState.value = _settingsState.value.let {
-            when (it) {
-                is UiState.Success -> {
-                    val updatedCalendar = fieldUpdater(it.data)
-                    UiState.Success(updatedCalendar)
-                }
-                else -> it
-            }
-        }
-    }
-
     suspend fun updateCalendarInfo() {
         val state = (settingsState.value as UiState.Success<Calendar>)
+
+        if (!validateFields(state.data)) {
+            return
+        }
+
         viewModelScope.launch {
             firestoreRepository.updateCalendar(
                 _calendarId.value,
@@ -95,13 +107,15 @@ class CalendarSettingsViewModel @Inject constructor(
     }
 
     suspend fun addTeam(teamName: String) {
-        viewModelScope.launch {
-            firestoreRepository.addTeamToCalendar(
-                _calendarId.value,
-                teamName
-            )
-            onTeamChange(teamName, true)
+        if (!validateTeam(teamName)) {
+            return
         }
+
+        firestoreRepository.addTeamToCalendar(
+            _calendarId.value,
+            teamName
+        )
+        onTeamChange(teamName, true)
     }
 
     suspend fun deleteTeam(teamName: String) {
@@ -112,5 +126,23 @@ class CalendarSettingsViewModel @Inject constructor(
             )
             onTeamChange(teamName, false)
         }
+    }
+
+    private fun validateFields(calendar: Calendar): Boolean {
+        val nameValidation = validateField(calendar.name)
+        val descriptionValidation = validateField(calendar.description)
+
+        _nameError.value = nameValidation.errorMessage
+        _descriptionError.value = descriptionValidation.errorMessage
+
+        // Si hay errores, no continuar
+        return nameValidation.success && descriptionValidation.success
+    }
+
+    private fun validateTeam(team: String): Boolean {
+        val teamValidation = validateField(team)
+        _nameError.value = teamValidation.errorMessage
+
+        return teamValidation.success
     }
 }

@@ -3,9 +3,6 @@ package com.aramonp.workly.presentation.screen.calendar
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -33,8 +31,6 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -51,9 +47,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -66,8 +59,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -75,6 +66,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.aramonp.workly.R
 import com.aramonp.workly.domain.model.Calendar
@@ -82,17 +74,17 @@ import com.aramonp.workly.domain.model.Event
 import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.navigation.Route
 import com.aramonp.workly.presentation.component.AlertDialogTask
-import com.aramonp.workly.presentation.screen.home.RegisterField
+import com.aramonp.workly.presentation.component.DatePickerField
+import com.aramonp.workly.presentation.component.OutlinedFormTextField
+import com.aramonp.workly.presentation.component.TimePickerField
 import com.aramonp.workly.util.combineDateAndTime
-import com.aramonp.workly.util.convertMillisToDate
 import com.aramonp.workly.util.getTimeFromTimeStamp
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
-import java.util.Locale
 
 @Composable
-fun CalendarScreen(calendarId: String, viewModel: CalendarViewModel, navController: NavHostController) {
+fun CalendarScreen(calendarId: String, navController: NavHostController, viewModel: CalendarViewModel = hiltViewModel()) {
     var showDialog by rememberSaveable { mutableStateOf(false) }
     val calendarState = viewModel.calendarState.collectAsState()
     val eventsState = viewModel.eventsState.collectAsState()
@@ -374,73 +366,104 @@ fun EventForm(viewModel: CalendarViewModel, calendar: Calendar, onDismiss: () ->
     var selectedEndTime by rememberSaveable { mutableStateOf("") }
     var selectedTeam by rememberSaveable { mutableStateOf("") }
 
+    val titleError: String? by viewModel.titleError.collectAsState()
+    val descriptionError: String? by viewModel.descriptionError.collectAsState()
+    val datesError: String? by viewModel.datesError.collectAsState()
+    val assigneeError: String? by viewModel.assigneeError.collectAsState()
+
+
     Column(
         modifier = Modifier.padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text("Nuevo evento", fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(16.dp))
 
-        RegisterField(
+        OutlinedFormTextField(
             name,
             "Título",
             { name = it },
             Modifier.fillMaxWidth(),
-            KeyboardOptions(keyboardType = KeyboardType.Text)
+            KeyboardOptions(keyboardType = KeyboardType.Text),
+            isError = titleError != null,
+            errorMessage = titleError
         )
 
-        RegisterField(
+        OutlinedFormTextField(
             description,
             "Descripción",
             { description = it },
             Modifier.fillMaxWidth(),
-            KeyboardOptions(keyboardType = KeyboardType.Text)
+            KeyboardOptions(keyboardType = KeyboardType.Text),
+            isError = descriptionError != null,
+            errorMessage = descriptionError
         )
 
-        DatePickerField(
-            value = selectedStartDate,
-            label = "Fecha de inicio",
-            onDateSelected = { date ->
-                selectedStartDate = date
-            }
-        )
+        Spacer(modifier = Modifier.height(16.dp))
 
-        TimePickerField(
-            value = selectedStartTime,
-            label = "Hora de inicio",
-            onTimeSelected = { time ->
-                selectedStartTime = time
-            }
-        )
+        Row(
+           modifier = Modifier.fillMaxWidth()
+        ) {
+            DatePickerField(
+                value = selectedStartDate,
+                label = "Fecha inicio",
+                onDateSelected = { date ->
+                    selectedStartDate = date
+                }
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            TimePickerField(
+                value = selectedStartTime,
+                label = "Hora inicio",
+                onTimeSelected = { time ->
+                    selectedStartTime = time
+                }
+            )
+        }
 
-        DatePickerField(
-            value = selectedEndDate,
-            label = "Fecha fin",
-            onDateSelected = { date ->
-                selectedEndDate = date
-            }
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            DatePickerField(
+                value = selectedEndDate,
+                label = "Fecha fin",
+                onDateSelected = { date ->
+                    selectedEndDate = date
+                }
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            TimePickerField(
+                value = selectedEndTime,
+                label = "Hora fin",
+                onTimeSelected = { time ->
+                    selectedEndTime = time
+                }
+            )
+        }
+        if (datesError != null) {
+            Text(datesError!!, color = Color.Red, fontSize = 12.sp)
+        }
 
-        TimePickerField(
-            value = selectedEndTime,
-            label = "Hora fin",
-            onTimeSelected = { time ->
-                selectedEndTime = time
-            }
-        )
+        Spacer(modifier = Modifier.height(16.dp))
 
-        RegisterField(
+        OutlinedFormTextField(
             location,
             "Localización",
             { location = it },
             Modifier.fillMaxWidth(),
-            KeyboardOptions(keyboardType = KeyboardType.Text)
+            KeyboardOptions(keyboardType = KeyboardType.Text),
+            isError = false,
+            errorMessage = null
         )
 
         DropDownMenu(calendar.teams) { selectedTeam = it }
+        if (assigneeError != null) {
+            Text(assigneeError!!, color = Color.Red, fontSize = 12.sp)
+        }
 
-        Row {
+        Row (
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
             TextButton(
                 modifier = Modifier.padding(8.dp),
                 onClick = onDismiss
@@ -471,133 +494,6 @@ fun EventForm(viewModel: CalendarViewModel, calendar: Calendar, onDismiss: () ->
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DatePickerField(
-    value: String,
-    label: String,
-    onDateSelected: (String) -> Unit
-) {
-    val datePickerState = rememberDatePickerState()
-    var showDatePicker by rememberSaveable { mutableStateOf(false) }
-
-    // Campo de fecha
-    OutlinedTextField(
-        value = value,
-        onValueChange = {},
-        label = { Text(label) },
-        modifier = Modifier
-            .fillMaxWidth()
-            .pointerInput(value) {
-                awaitEachGesture {
-                    // Modifier.clickable doesn't work for text fields, so we use Modifier.pointerInput
-                    // in the Initial pass to observe events before the text field consumes them
-                    // in the Main pass.
-                    awaitFirstDown(pass = PointerEventPass.Initial)
-                    val upEvent = waitForUpOrCancellation(pass = PointerEventPass.Initial)
-                    if (upEvent != null) {
-                        showDatePicker = true
-                    }
-                }
-            }
-    )
-
-    // Mostrar el DatePicker si `showDatePicker` es true
-    if (showDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { convertMillisToDate(it) }
-                        ?.let { onDateSelected(it) }
-                    showDatePicker = false
-                }) {
-                    Text("Seleccionar")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("Cancelar")
-                }
-            }
-        ) {
-            DatePicker(
-                state = datePickerState
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TimePickerField(
-    value: String,
-    label: String,
-    onTimeSelected: (String) -> Unit
-) {
-    val timePickerState = rememberTimePickerState()
-    var showTimePicker by rememberSaveable { mutableStateOf(false) }
-
-    // Campo de fecha
-    OutlinedTextField(
-        value = value,
-        onValueChange = {},
-        label = { Text(label) },
-        modifier = Modifier
-            .fillMaxWidth()
-            .pointerInput(value) {
-                awaitEachGesture {
-                    // Modifier.clickable doesn't work for text fields, so we use Modifier.pointerInput
-                    // in the Initial pass to observe events before the text field consumes them
-                    // in the Main pass.
-                    awaitFirstDown(pass = PointerEventPass.Initial)
-                    val upEvent = waitForUpOrCancellation(pass = PointerEventPass.Initial)
-                    if (upEvent != null) {
-                        showTimePicker = true
-                    }
-                }
-            }
-    )
-
-    // Mostrar el DatePicker si `showDatePicker` es true
-    if (showTimePicker) {
-        Dialog(
-            onDismissRequest = { showTimePicker = false },
-        ) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                shape = MaterialTheme.shapes.large,
-                tonalElevation = 3.dp
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    TimePicker(
-                        state = timePickerState
-                    )
-                    Row(
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        TextButton(onClick = { showTimePicker = false }) {
-                            Text("Cancelar")
-                        }
-                        TextButton(onClick = {
-                            onTimeSelected(String.format(
-                                Locale.getDefault(),
-                                "%02d:%02d", timePickerState.hour, timePickerState.minute)
-                            )
-                            showTimePicker = false
-                        }) {
-                            Text("Seleccionar")
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 fun DropDownMenu(teams: List<String>, onItemSelected: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     var selectedText by remember { mutableStateOf("") }
@@ -609,7 +505,7 @@ fun DropDownMenu(teams: List<String>, onItemSelected: (String) -> Unit) {
         OutlinedTextField(
             value = selectedText,
             onValueChange = { selectedText = it },
-            label = { Text(text = "Participantes") },
+            label = { Text(text = "Asignado") },
             singleLine = true,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
@@ -684,7 +580,7 @@ fun EventContent(modifier: Modifier, eventList: List<Event>, onEventClicked: (St
                         item.assignee,
                         "${getTimeFromTimeStamp(item.startDate)} - ${getTimeFromTimeStamp(item.endDate)}",
                         onEventClicked
-                        )
+                    )
                 }
             }
         }
@@ -740,10 +636,4 @@ fun EventItem(uid: String, name: String, description: String, team: String, time
             }
         }
     }
-}
-
-@Composable
-fun CalendarMenu(
-    expanded: Boolean
-) {
 }

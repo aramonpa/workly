@@ -9,6 +9,9 @@ import com.aramonp.workly.data.repository.FirestoreRepositoryImpl
 import com.aramonp.workly.domain.model.Calendar
 import com.aramonp.workly.domain.model.Event
 import com.aramonp.workly.domain.model.UiState
+import com.aramonp.workly.domain.use_case.ValidateDates
+import com.aramonp.workly.domain.use_case.ValidateField
+import com.aramonp.workly.domain.use_case.ValidatePassword
 import com.aramonp.workly.util.convertToTimestamp
 import com.google.firebase.Timestamp
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,7 +27,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
-    private val firestoreRepository: FirestoreRepositoryImpl
+    private val firestoreRepository: FirestoreRepositoryImpl,
+    private val validateField: ValidateField,
+    private val validateDates: ValidateDates
 ) : ViewModel() {
     var selectedDate by mutableStateOf<LocalDate>(LocalDate.now())
     var currentMonth: YearMonth by mutableStateOf(YearMonth.now())
@@ -35,9 +40,26 @@ class CalendarViewModel @Inject constructor(
     private val _eventsState = MutableStateFlow<UiState<List<Event>?>>(UiState.Loading)
     val eventsState: StateFlow<UiState<List<Event>?>> = _eventsState
 
+    /*
+    private val _validationErrors = MutableStateFlow<Map<String, String>>(emptyMap())
+    val validationErrors: StateFlow<Map<String, String>> = _validationErrors
+    val nameResult = validateEventName(name)
+        if (!nameResult.successful) {
+            errors["name"] = nameResult.errorMessage.orEmpty()
+        }
+     */
+
+    private val _titleError = MutableStateFlow<String?>(null)
+    val titleError: StateFlow<String?> = _titleError
+    private val _descriptionError = MutableStateFlow<String?>(null)
+    val descriptionError: StateFlow<String?> = _descriptionError
+    private val _datesError = MutableStateFlow<String?>(null)
+    val datesError: StateFlow<String?> = _datesError
+    private val _assigneeError = MutableStateFlow<String?>(null)
+    val assigneeError: StateFlow<String?> = _assigneeError
+
     private val _calendarId = MutableStateFlow("")
 
-    // Formateador para el nombre del mes en español
     private val monthFormatter = DateTimeFormatter.ofPattern("MMMM", Locale("es", "ES"))
 
     fun getDaysInMonth(): List<LocalDate> {
@@ -93,7 +115,6 @@ class CalendarViewModel @Inject constructor(
     }
 
     fun getCurrentMonthName(): String {
-        // Obtiene el nombre del mes en español
         return currentMonth.format(monthFormatter).uppercase()
     }
 
@@ -119,7 +140,6 @@ class CalendarViewModel @Inject constructor(
             }
     }
 
-
     private fun onCalendarFieldChange(fieldUpdater: (Calendar) -> Calendar) {
         _calendarState.value = _calendarState.value.let {
             when (it) {
@@ -132,34 +152,6 @@ class CalendarViewModel @Inject constructor(
         }
     }
 
-    suspend fun addEvent(
-        name: String,
-        description: String,
-        location: String,
-        startDate: LocalDateTime,
-        endDate: LocalDateTime,
-        team: String
-    ) {
-        val event = Event(
-            title = name,
-            description = description,
-            startDate = convertToTimestamp(startDate),
-            endDate = convertToTimestamp(endDate),
-            createdAt = Timestamp.now(),
-            location = location,
-            assignee = team
-        )
-        viewModelScope.launch {
-            firestoreRepository.addEvent(
-                _calendarId.value,
-                event
-            )
-        }
-        //val currentEvents = (_eventsState.value as? UiState.Success)?.data.orEmpty()
-        //_eventsState.value = UiState.Success(currentEvents + event)
-        fetchEvents()
-    }
-
     private suspend fun getCalendarInfo(calendarId: String): Result<Calendar?> {
         return firestoreRepository.getCalendar(calendarId)
     }
@@ -168,9 +160,57 @@ class CalendarViewModel @Inject constructor(
         return firestoreRepository.getAllEventsByDay(calendarId, date)
     }
 
+    suspend fun addEvent(
+        name: String,
+        description: String,
+        location: String,
+        startDate: LocalDateTime,
+        endDate: LocalDateTime,
+        assignee: String
+    ) {
+        val event = Event(
+            title = name,
+            description = description,
+            startDate = convertToTimestamp(startDate),
+            endDate = convertToTimestamp(endDate),
+            createdAt = Timestamp.now(),
+            location = location,
+            assignee = assignee
+        )
+
+        if (!validateFields(event)) {
+            return
+        }
+
+        firestoreRepository.addEvent(
+            _calendarId.value,
+            event
+        )
+
+        //val currentEvents = (_eventsState.value as? UiState.Success)?.data.orEmpty()
+        //_eventsState.value = UiState.Success(currentEvents + event)
+        fetchEvents()
+    }
+
     suspend fun deleteCalendar() {
         viewModelScope.launch {
             firestoreRepository.deleteCalendar(_calendarId.value)
         }
+    }
+
+    private fun validateFields(event: Event): Boolean {
+        val titleValidation = validateField(event.title)
+        val descriptionValidation = validateField(event.description)
+        val datesValidation = validateDates(event.startDate, event.endDate)
+        val assigneeValidation = validateField(event.assignee)
+
+        _titleError.value = titleValidation.errorMessage
+        _descriptionError.value = descriptionValidation.errorMessage
+        _datesError.value = datesValidation.errorMessage
+        _assigneeError.value = assigneeValidation.errorMessage
+
+        // Si hay errores, no continuar
+        return titleValidation.success && descriptionValidation.success && datesValidation.success &&
+                assigneeValidation.success
     }
 }
