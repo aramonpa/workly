@@ -6,6 +6,7 @@ import com.aramonp.workly.data.repository.AuthRepositoryImpl
 import com.aramonp.workly.data.repository.FirestoreRepositoryImpl
 import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.domain.model.User
+import com.aramonp.workly.domain.use_case.ValidateField
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,22 +18,20 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val authRepository: AuthRepositoryImpl,
-    private val firestoreRepository: FirestoreRepositoryImpl
+    private val firestoreRepository: FirestoreRepositoryImpl,
+    private val validateField: ValidateField
 ) : ViewModel() {
     private val _settingsState = MutableStateFlow<UiState<User>>(UiState.Loading)
     val settingsState: StateFlow<UiState<User>> = _settingsState
 
-    private val _name = MutableStateFlow("")
-    val name: StateFlow<String> = _name
+    private val _nameError = MutableStateFlow<String?>(null)
+    val nameError: StateFlow<String?> = _nameError
 
-    private val _surname = MutableStateFlow("")
-    val surname: StateFlow<String> = _surname
+    private val _surnameError = MutableStateFlow<String?>(null)
+    val surnameError: StateFlow<String?> = _surnameError
 
-    private val _username = MutableStateFlow("")
-    val username: StateFlow<String> = _username
-
-    private val _email = MutableStateFlow("")
-    val email: StateFlow<String> = _email
+    private val _userNameError = MutableStateFlow<String?>(null)
+    val userNameError: StateFlow<String?> = _userNameError
 
     private val _uid = MutableStateFlow("")
 
@@ -94,16 +93,32 @@ class SettingsViewModel @Inject constructor(
 
     suspend fun updateUserInfo() {
         val state = (settingsState.value as UiState.Success<User>)
-        viewModelScope.launch {
-            firestoreRepository.updateUser(
-                _uid.value,
-                mapOf(
-                    "name" to state.data.name,
-                    "surname" to state.data.surname,
-                    "username" to state.data.username,
-                    "updatedAt" to Timestamp.now()
-                )
-            )
+
+        if (!validateFields(state.data)) {
+            return
         }
+
+        firestoreRepository.updateUser(
+            _uid.value,
+            mapOf(
+                "name" to state.data.name,
+                "surname" to state.data.surname,
+                "username" to state.data.username,
+                "updatedAt" to Timestamp.now()
+            )
+        )
+    }
+
+    private fun validateFields(user: User): Boolean {
+        val nameValidation = validateField(user.name)
+        val surnameValidation = validateField(user.surname)
+        val userNameValidation = validateField(user.username)
+
+        _nameError.value = nameValidation.errorMessage
+        _surnameError.value = surnameValidation.errorMessage
+        _userNameError.value = userNameValidation.errorMessage
+
+        // Si hay errores, no continuar
+        return nameValidation.success && surnameValidation.success
     }
 }

@@ -6,8 +6,6 @@ import com.aramonp.workly.domain.model.User
 import com.aramonp.workly.domain.model.toMap
 import com.aramonp.workly.domain.repository.FirestoreRepository
 import com.aramonp.workly.util.convertLocalDateToTimestamp
-import com.aramonp.workly.util.convertToTimestamp
-import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore

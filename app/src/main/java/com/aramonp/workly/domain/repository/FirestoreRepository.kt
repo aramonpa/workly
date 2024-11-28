@@ -1,11 +1,8 @@
 package com.aramonp.workly.domain.repository
 
-import com.aramonp.workly.domain.model.AuthState
 import com.aramonp.workly.domain.model.Calendar
 import com.aramonp.workly.domain.model.Event
-import com.aramonp.workly.domain.model.FirestoreState
 import com.aramonp.workly.domain.model.User
-import com.google.firebase.auth.FirebaseUser
 import java.time.LocalDate
 
 interface FirestoreRepository {

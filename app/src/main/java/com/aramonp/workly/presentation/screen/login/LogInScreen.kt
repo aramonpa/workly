@@ -3,13 +3,10 @@ package com.aramonp.workly.presentation.screen.login
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,38 +16,40 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.aramonp.workly.R
 import com.aramonp.workly.domain.model.AuthState
 import com.aramonp.workly.presentation.component.CircularProgress
+import com.aramonp.workly.presentation.component.OutlinedFormTextField
 import kotlinx.coroutines.launch
 
 @Composable
-fun LogInScreen(onNavigateToSignUp: () -> Unit, onNavigateToHome: () -> Unit, viewModel: LogInViewModel) {
+fun LogInScreen(onNavigateToSignUp: () -> Unit, onNavigateToHome: () -> Unit, viewModel: LogInViewModel = hiltViewModel()) {
     val authState = viewModel.authState.collectAsState()
     val email: String by viewModel.email.collectAsState()
+    val emailError: String? by viewModel.emailError.collectAsState()
     val password: String by viewModel.password.collectAsState()
+    val passwordError: String? by viewModel.passwordError.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
     Scaffold(modifier = Modifier.fillMaxSize()) {
@@ -60,11 +59,11 @@ fun LogInScreen(onNavigateToSignUp: () -> Unit, onNavigateToHome: () -> Unit, vi
                 .background(Color.White)
                 .padding(it)
                 .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Spacer(modifier = Modifier.weight(0.5f))
             Row(
+                modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
                 Text("Workly", fontSize = 50.sp)
             }
@@ -74,27 +73,33 @@ fun LogInScreen(onNavigateToSignUp: () -> Unit, onNavigateToHome: () -> Unit, vi
                 Text("Crea una cuenta o inicia sesión para empezar a gestionar tus equipos.")
             }
             Spacer(modifier = Modifier.height(8.dp))
-            LogInField(
+
+            OutlinedFormTextField(
                 email,
                 "Email",
                 { value -> viewModel.onEmailChange(value) },
                 Modifier.fillMaxWidth(),
                 KeyboardOptions(keyboardType = KeyboardType.Email),
-                VisualTransformation.None
+                VisualTransformation.None,
+                isError = emailError != null,
+                errorMessage = emailError
             )
-            LogInField(
+            OutlinedFormTextField(
                 password,
                 "Contraseña",
                 { value -> viewModel.onPasswordChange(value) },
                 Modifier.fillMaxWidth(),
                 KeyboardOptions(keyboardType = KeyboardType.Password),
-                PasswordVisualTransformation()
+                PasswordVisualTransformation(),
+                isError = passwordError != null,
+                errorMessage = passwordError
             )
+
             Spacer(modifier = Modifier.height(8.dp))
             Button(
                 onClick = {
                     coroutineScope.launch {
-                        viewModel.logIn(email, password)
+                        viewModel.logIn()
                     }
                 },
                 shape = RoundedCornerShape(5.dp),
@@ -102,7 +107,10 @@ fun LogInScreen(onNavigateToSignUp: () -> Unit, onNavigateToHome: () -> Unit, vi
             ) {
                 Text("Iniciar sesión")
             }
-            TextButton(onClick = { onNavigateToSignUp() }) {
+            TextButton(
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                onClick = { onNavigateToSignUp() }
+            ) {
                 Text(
                     text = "¿No tienes una cuenta? Regístrate",
                     color = Color.Gray
@@ -113,22 +121,13 @@ fun LogInScreen(onNavigateToSignUp: () -> Unit, onNavigateToHome: () -> Unit, vi
                 val errorMessage = (authState.value as AuthState.Error).message
                 Text("Error: $errorMessage", color = Color.Red)
             }
-            /*
-            Button(
-                onClick = onNavigateToSignUp,
-                colors = ButtonDefaults.buttonColors(Color.White),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Registrarse", color = Color.Gray)
-            }
-             */
+
             Spacer(modifier = Modifier.weight(1f))
             SocialButton({}, R.drawable.apple, "Continuar con Apple")
             Spacer(modifier = Modifier.height(8.dp))
             SocialButton({}, R.drawable.google, "Continuar con Google")
             Spacer(modifier = Modifier.height(8.dp))
             SocialButton({}, R.drawable.facebook, "Continuar con Facebook")
-
         }
     }
 
@@ -148,30 +147,6 @@ fun LogInScreen(onNavigateToSignUp: () -> Unit, onNavigateToHome: () -> Unit, vi
         }
         else -> Unit
     }
-}
-
-@Composable
-fun LogInContent() {
-
-}
-
-@Composable
-fun LogInField(
-    value: String,
-    label: String,
-    onValueChange: (String) -> Unit,
-    modifier: Modifier,
-    keyboardOption: KeyboardOptions,
-    visualTransformation: VisualTransformation
-) {
-    OutlinedTextField(
-        value = value,
-        label = { Text(text = label) },
-        onValueChange = onValueChange,
-        modifier = modifier,
-        keyboardOptions = keyboardOption,
-        visualTransformation = visualTransformation
-    )
 }
 
 @Composable

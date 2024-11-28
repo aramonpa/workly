@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 
 @Composable
-fun LabeledField(label: String, value: String, onConfirmation: (String) -> Unit) {
+fun LabeledField(label: String, value: String, isError: Boolean, errorMessage: String?, onConfirmation: (String) -> Unit) {
     val showDialog = remember { mutableStateOf(false) }
 
     Column {
@@ -40,10 +40,11 @@ fun LabeledField(label: String, value: String, onConfirmation: (String) -> Unit)
                 onDismissRequest = { showDialog.value = false },
                 onConfirmation = {
                     onConfirmation(it)
-                    showDialog.value = false
                 },
                 dialogTitle = label,
-                dialogText = value
+                dialogText = value,
+                isError = isError,
+                errorMessage = errorMessage
             )
         }
     }

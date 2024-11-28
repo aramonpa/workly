@@ -14,20 +14,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -45,19 +44,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.presentation.component.AlertDialogTask
 import com.aramonp.workly.presentation.component.CircularProgress
 import com.aramonp.workly.presentation.component.LabeledField
+import com.aramonp.workly.presentation.component.OutlinedFormTextField
 import com.aramonp.workly.presentation.component.OutlinedTextFieldDialog
-import com.aramonp.workly.presentation.screen.home.RegisterField
 import kotlinx.coroutines.launch
 
 @Composable
-fun CalendarSettingsScreen(id: String, navController: NavHostController, viewModel: CalendarSettingsViewModel) {
+fun CalendarSettingsScreen(id: String, navController: NavHostController, viewModel: CalendarSettingsViewModel = hiltViewModel()) {
     val coroutineScope = rememberCoroutineScope()
     var showDialog by remember { mutableStateOf(false) }
+    val nameError by viewModel.nameError.collectAsState()
+    val descriptionError by viewModel.descriptionError.collectAsState()
+    val teamError by viewModel.teamError.collectAsState()
 
     LaunchedEffect(id) {
         if (id.isNotEmpty()) {
@@ -93,9 +96,12 @@ fun CalendarSettingsScreen(id: String, navController: NavHostController, viewMod
                         .padding(it)
                         .padding(16.dp)
                 ) {
+                    //TODO: Fix values that are modified when exist errors.
                     LabeledField(
                         "Nombre",
-                        state.data.name
+                        state.data.name,
+                        isError = nameError != null,
+                        errorMessage = nameError
                     ) { value ->
                         coroutineScope.launch {
                             viewModel.onNameChange(value)
@@ -105,16 +111,20 @@ fun CalendarSettingsScreen(id: String, navController: NavHostController, viewMod
                     HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
                     LabeledField(
                         "Descripción",
-                        state.data.description
+                        state.data.description,
+                        isError = descriptionError != null,
+                        errorMessage = descriptionError
                     ) { value ->
                         coroutineScope.launch {
                             viewModel.onDescriptionChange(value)
                             viewModel.updateCalendarInfo()
                         }
                     }
+
                     HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-                    TeamsList(
-                        teams = state.data.teams,
+                    DetailedList(
+                        title = "Equipos de trabajo",
+                        items = state.data.teams,
                         onDelete = { value ->
                             coroutineScope.launch {
                                 viewModel.deleteTeam(value)
@@ -123,15 +133,19 @@ fun CalendarSettingsScreen(id: String, navController: NavHostController, viewMod
                         onConfirmation = { value ->
                             coroutineScope.launch {
                                 viewModel.addTeam(value)
+                                showDialog = false
                                 //viewModel.updateCalendarInfo()
                             }
-                        }
+                        },
+                        errorMessage = teamError
                     )
 
                     if (showDialog) {
                         ShowDialogSurface(
                             viewModel,
-                            onDismiss = { showDialog = false })
+                            onDismiss = { showDialog = false },
+                            errorMessage = teamError
+                        )
                     }
                 }
             }
@@ -144,13 +158,19 @@ fun CalendarSettingsScreen(id: String, navController: NavHostController, viewMod
 }
 
 @Composable
-fun TeamsList(teams: List<String>, onDelete: (String) -> Unit, onConfirmation: (String) -> Unit) {
+fun DetailedList(
+    title: String,
+    items: List<String>,
+    onDelete: (String) -> Unit,
+    onConfirmation: (String) -> Unit,
+    errorMessage: String?
+    ) {
     val showAlertDialog = remember { mutableStateOf(false) }
 
     Row(
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("Equipos de trabajo", fontWeight = FontWeight.Bold)
+        Text(title, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.weight(1f))
         IconButton (
             onClick = {
@@ -165,8 +185,8 @@ fun TeamsList(teams: List<String>, onDelete: (String) -> Unit, onConfirmation: (
         modifier = Modifier.padding(top = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(teams) { item ->
-            TeamItem(item, onDelete)
+        items(items) { item ->
+            DetailedItem(item, onDelete)
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
         }
     }
@@ -176,13 +196,15 @@ fun TeamsList(teams: List<String>, onDelete: (String) -> Unit, onConfirmation: (
             onDismissRequest = { showAlertDialog.value = false },
             onConfirmation = { onConfirmation(it) },
             dialogTitle = "Nuevo equipo de trabajo",
-            dialogText = ""
+            dialogText = "",
+            isError = errorMessage != null,
+            errorMessage = errorMessage
         )
     }
 }
 
 @Composable
-fun TeamItem(team: String, onDelete: (String) -> Unit) {
+fun DetailedItem(team: String, onDelete: (String) -> Unit) {
     val showAlertDialog = remember { mutableStateOf(false) }
 
     Row(
@@ -209,9 +231,10 @@ fun TeamItem(team: String, onDelete: (String) -> Unit) {
 }
 
 @Composable
-fun ShowDialogSurface(viewModel: CalendarSettingsViewModel, onDismiss: () -> Unit = {}) {
+fun ShowDialogSurface(viewModel: CalendarSettingsViewModel, onDismiss: () -> Unit = {}, errorMessage: String?) {
     val coroutineScope = rememberCoroutineScope()
     val name = remember { mutableStateOf("") }
+
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = MaterialTheme.shapes.large,
@@ -219,20 +242,23 @@ fun ShowDialogSurface(viewModel: CalendarSettingsViewModel, onDismiss: () -> Uni
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 Text("Nuevo equipo", fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(16.dp))
 
-                RegisterField(
+                OutlinedFormTextField(
                     name.value,
                     "Nombre",
                     { name.value = it },
                     Modifier.fillMaxWidth(),
-                    KeyboardOptions(keyboardType = KeyboardType.Text)
+                    KeyboardOptions(keyboardType = KeyboardType.Text),
+                    isError = errorMessage != null,
+                    errorMessage = errorMessage
                 )
-                Row {
+                Row(
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
                     TextButton(
                         modifier = Modifier.padding(8.dp),
                         onClick = onDismiss
@@ -253,6 +279,28 @@ fun ShowDialogSurface(viewModel: CalendarSettingsViewModel, onDismiss: () -> Uni
                     }
                 }
 
+            }
+        }
+    }
+}
+
+@Composable
+fun MemberField(label: String, title: String, onClick: () -> Unit) {
+    Column {
+        Text(text = label, fontWeight = FontWeight.Bold)
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                modifier = Modifier.weight(1f)
+            )
+            IconButton(onClick = onClick) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Ir"
+                )
             }
         }
     }

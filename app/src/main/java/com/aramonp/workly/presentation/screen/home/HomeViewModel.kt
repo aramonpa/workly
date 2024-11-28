@@ -7,6 +7,7 @@ import com.aramonp.workly.data.repository.FirestoreRepositoryImpl
 import com.aramonp.workly.domain.model.Calendar
 import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.domain.model.User
+import com.aramonp.workly.domain.use_case.ValidateField
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,7 +20,8 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     //TODO: Replace impls with interfaces ex: AuthRepositoryImpl -> AuthRepository
     private val authRepository: AuthRepositoryImpl,
-    private val firestoreRepository: FirestoreRepositoryImpl
+    private val firestoreRepository: FirestoreRepositoryImpl,
+    private val validateField: ValidateField
 ) : ViewModel() {
     private val _userState = MutableStateFlow<UiState<User>>(UiState.Loading)
     val userState: StateFlow<UiState<User>> = _userState
@@ -32,8 +34,14 @@ class HomeViewModel @Inject constructor(
     private val _calendarName = MutableStateFlow("")
     val calendarName: StateFlow<String> = _calendarName
 
+    private val _calendarNameError = MutableStateFlow<String?>(null)
+    val calendarNameError: StateFlow<String?> = _calendarNameError
+
     private val _calendarDescription = MutableStateFlow("")
     val calendarDescription: StateFlow<String> = _calendarDescription
+
+    private val _calendarDescriptionError = MutableStateFlow<String?>(null)
+    val calendarDescriptionError: StateFlow<String?> = _calendarDescriptionError
 
     init {
         fetchUser()
@@ -89,28 +97,28 @@ class HomeViewModel @Inject constructor(
     suspend fun createCalendar() {
         //_calendarListState.value = UiState.Loading
 
-        if (_calendarName.value.isNotEmpty()) {
-            val currentUser = authRepository.getCurrentUser().getOrNull()
-            val uid = currentUser?.uid!!
-
-            val calendar = Calendar(
-                name = _calendarName.value,
-                description = _calendarDescription.value,
-                ownerId = uid,
-                createdAt = Timestamp.now(),
-                members = listOf(uid)
-            )
-
-            viewModelScope.launch {
-                firestoreRepository.createCalendar(calendar)
-                    .onSuccess {
-                        calendar.uid = it
-                        _calendarList.value += calendar
-                        _calendarListState.value = UiState.Success(_calendarList.value)
-                    }
-                    .onFailure { _calendarListState.value = UiState.Error(it.message.orEmpty()) }
-            }
+        if (!validateFields()) {
+            return
         }
+
+        val currentUser = authRepository.getCurrentUser().getOrNull()
+        val uid = currentUser?.uid!!
+
+        val calendar = Calendar(
+            name = _calendarName.value,
+            description = _calendarDescription.value,
+            ownerId = uid,
+            createdAt = Timestamp.now(),
+            members = listOf(uid)
+        )
+
+        firestoreRepository.createCalendar(calendar)
+            .onSuccess {
+                calendar.uid = it
+                _calendarList.value += calendar
+                _calendarListState.value = UiState.Success(_calendarList.value)
+            }
+            .onFailure { _calendarListState.value = UiState.Error(it.message.orEmpty()) }
     }
 
     fun onNameChange(name: String) {
@@ -120,4 +128,15 @@ class HomeViewModel @Inject constructor(
     fun onDescriptionChange(description: String) {
         _calendarDescription.value = description
     }
+
+    private fun validateFields(): Boolean {
+        val nameValidation = validateField(_calendarName.value)
+        val descriptionValidation = validateField(_calendarDescription.value)
+
+        _calendarNameError.value = nameValidation.errorMessage
+        _calendarDescriptionError.value = descriptionValidation.errorMessage
+
+        return nameValidation.success && descriptionValidation.success
+    }
+
 }

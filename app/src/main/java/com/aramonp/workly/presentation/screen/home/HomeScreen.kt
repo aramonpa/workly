@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.aramonp.workly.R
 import com.aramonp.workly.domain.model.Calendar
@@ -54,10 +55,11 @@ import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.domain.model.User
 import com.aramonp.workly.navigation.Route
 import com.aramonp.workly.presentation.component.BottomNavigationBar
+import com.aramonp.workly.presentation.component.OutlinedFormTextField
 import kotlinx.coroutines.launch
 
 @Composable
-fun HomeScreen(onNavigateToCalendar: (String) -> Unit, navController: NavHostController, viewModel: HomeViewModel) {
+fun HomeScreen(onNavigateToCalendar: (String) -> Unit, navController: NavHostController, viewModel: HomeViewModel = hiltViewModel()) {
     val userState = viewModel.userState.collectAsState()
     val calendarListState = viewModel.calendarListState.collectAsState()
 
@@ -232,6 +234,8 @@ fun CalendarItem(name: String, description: String, id: String, navController: N
 
 @Composable
 fun ShowDialogSurface(viewModel: HomeViewModel, name: String, description: String, onDismiss: () -> Unit = {}) {
+    val calendarNameError by viewModel.calendarNameError.collectAsState()
+    val calendarDescriptionError by viewModel.calendarDescriptionError.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
     Dialog(onDismissRequest = onDismiss) {
@@ -241,28 +245,33 @@ fun ShowDialogSurface(viewModel: HomeViewModel, name: String, description: Strin
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 Text("Nuevo calendario", fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(16.dp))
 
-                RegisterField(
+                OutlinedFormTextField(
                     name,
                     "Nombre",
                     { value -> viewModel.onNameChange(value.trim()) },
                     Modifier.fillMaxWidth(),
-                    KeyboardOptions(keyboardType = KeyboardType.Text)
+                    KeyboardOptions(keyboardType = KeyboardType.Text),
+                    isError = calendarNameError != null,
+                    errorMessage = calendarNameError
                 )
-                RegisterField(
+                OutlinedFormTextField(
                     description,
                     "Descripción",
                     { value -> viewModel.onDescriptionChange(value.trim()) },
                     Modifier.fillMaxWidth(),
-                    KeyboardOptions(keyboardType = KeyboardType.Text)
+                    KeyboardOptions(keyboardType = KeyboardType.Text),
+                    isError = calendarDescriptionError != null,
+                    errorMessage = calendarDescriptionError
                 )
 
-                Row {
+                Row(
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                ) {
                     TextButton(
                         modifier = Modifier.padding(8.dp),
                         onClick = onDismiss
@@ -274,10 +283,11 @@ fun ShowDialogSurface(viewModel: HomeViewModel, name: String, description: Strin
                         onClick = {
                             coroutineScope.launch {
                                 viewModel.createCalendar()
-                                viewModel.onNameChange("")
-                                viewModel.onDescriptionChange("")
-                                onDismiss()
-
+                                if (calendarNameError != null && calendarDescriptionError != null) {
+                                    viewModel.onNameChange("")
+                                    viewModel.onDescriptionChange("")
+                                    onDismiss()
+                                }
                             }
                         }
                     ) {
@@ -288,25 +298,4 @@ fun ShowDialogSurface(viewModel: HomeViewModel, name: String, description: Strin
             }
         }
     }
-}
-
-@Composable
-fun RegisterField(
-    value: String,
-    label: String,
-    onValueChange: (String) -> Unit,
-    modifier: Modifier,
-    keyboardOption: KeyboardOptions,
-    visualTransformation: VisualTransformation = VisualTransformation.None,
-    isError: Boolean = false
-) {
-    OutlinedTextField(
-        value = value,
-        label = { Text(text = label) },
-        onValueChange = onValueChange,
-        modifier = modifier,
-        keyboardOptions = keyboardOption,
-        visualTransformation = visualTransformation,
-        isError = isError
-    )
 }

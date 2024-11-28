@@ -1,7 +1,5 @@
 package com.aramonp.workly.domain.model
 
-import com.google.firebase.auth.FirebaseUser
-
 sealed class AuthState {
     data object Unauthenticated : AuthState()
     data object Authenticated : AuthState()
