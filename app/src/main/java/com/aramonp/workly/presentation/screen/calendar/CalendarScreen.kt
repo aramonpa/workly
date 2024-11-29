@@ -47,6 +47,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -83,11 +85,15 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(calendarId: String, navController: NavHostController, viewModel: CalendarViewModel = hiltViewModel()) {
     var showDialog by rememberSaveable { mutableStateOf(false) }
     val calendarState = viewModel.calendarState.collectAsState()
     val eventsState = viewModel.eventsState.collectAsState()
+    val refreshState = rememberPullToRefreshState()
+    var isRefreshing by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(calendarId) {
         if (calendarId.isNotEmpty()) {
@@ -122,20 +128,32 @@ fun CalendarScreen(calendarId: String, navController: NavHostController, viewMod
 
                     when (val events = eventsState.value) {
                         is UiState.Success -> {
-                            if (events.data.isNullOrEmpty()) {
-                                Text("No hay eventos para este día.")
-                            } else {
-                                EventContent(
-                                    Modifier
-                                        .padding(top = 16.dp, start = 16.dp, end = 16.dp),
-                                    events.data
-                                ) { eventId ->
-                                    navController.navigate(
-                                        Route.EventScreen.createRoute(
-                                            calendarId,
-                                            eventId
+                            PullToRefreshBox(
+                                state = refreshState,
+                                isRefreshing = isRefreshing,
+                                onRefresh = {
+                                    coroutineScope.launch {
+                                        isRefreshing = true
+                                        viewModel.fetchEvents()
+                                        isRefreshing = false
+                                    }
+                                }
+                            ) {
+                                if (events.data.isNullOrEmpty()) {
+                                    Text("No hay eventos para este día.")
+                                } else {
+                                    EventContent(
+                                        Modifier
+                                            .padding(top = 16.dp, start = 16.dp, end = 16.dp),
+                                        events.data
+                                    ) { eventId ->
+                                        navController.navigate(
+                                            Route.EventScreen.createRoute(
+                                                calendarId,
+                                                eventId
+                                            )
                                         )
-                                    )
+                                    }
                                 }
                             }
                         }
