@@ -9,6 +9,7 @@ import com.aramonp.workly.util.convertLocalDateToTimestamp
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.toObjects
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 import javax.inject.Inject
@@ -89,12 +90,12 @@ class FirestoreRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getAllCalendarsByUser(uid: String): Result<List<Calendar>> {
+    override suspend fun getAllCalendarsByUser(email: String): Result<List<Calendar>> {
         return try {
             Result.success(
                 firebaseFirestore
                     .collection("calendars")
-                    .whereArrayContains("members", uid)
+                    .whereArrayContains("members", email)
                     .get()
                     .await()
                     .documents
@@ -136,6 +137,22 @@ class FirestoreRepositoryImpl @Inject constructor(
             teams = (get("teams") as? List<*>)?.mapNotNull { it as? String }!!
         )
     }
+
+    /*
+    members = (get("members") as? List<*>)?.mapNotNull { memberMap ->
+                if (memberMap is Map<*, *>) {
+                    val uid = (memberMap["uid"] as? String)
+                    val email = (memberMap["role"] as? String)
+                    if (uid != null && email != null) {
+                        mapOf("id" to uid, "email" to email)
+                    } else {
+                        null
+                    }
+                } else {
+                    null
+                }
+            } ?: emptyList()
+     */
 
     private fun DocumentSnapshot.toEvent(): Event {
         return Event(
@@ -247,6 +264,7 @@ class FirestoreRepositoryImpl @Inject constructor(
             Result.failure(Exception("Ocurrió un error al obtener el usuario"))
         }
     }
+
     override suspend fun deleteTeamToCalendar(calendarId: String, teamName: String): Result<String> {
         return try {
             firebaseFirestore.collection("calendars")
@@ -272,4 +290,56 @@ class FirestoreRepositoryImpl @Inject constructor(
             Result.failure(Exception("Ocurrió un error al obtener el usuario"))
         }
     }
+
+    override suspend fun getMembers(calendarId: String): Result<List<String>> {
+        return try {
+            val documentSnapshot = firebaseFirestore.collection("calendars")
+                .document(calendarId)
+                .get()
+                .await()
+
+            val members = (documentSnapshot.get("members") as? List<*>)?.mapNotNull { it as? String }!!
+
+            Result.success(members)
+        } catch (e: Exception) {
+            Result.failure(Exception("Ocurrió un error al obtener el usuario"))
+        }
+    }
+
+    override suspend fun addMemberToCalendar(calendarId: String, email: String): Result<String> {
+        return try {
+            firebaseFirestore.collection("calendars")
+                .document(calendarId)
+                .update("members", FieldValue.arrayUnion(email))
+            Result.success(email)
+        } catch (e: Exception) {
+            Result.failure(Exception("Ocurrió un error al obtener el usuario"))
+        }
+    }
+
+    override suspend fun getUserByEmail(email: String): Result<User?> {
+        return try {
+            val querySnapshot = firebaseFirestore.collection("users")
+                .whereEqualTo("email", email)
+                .get()
+                .await()
+
+            val user = querySnapshot.documents.firstOrNull()?.toObject(User::class.java)
+            Result.success(user)
+        } catch (e: Exception) {
+            Result.failure(Exception("Ocurrió un error al obtener el usuario", e))
+        }
+    }
+
+    override suspend fun deleteMemberOfCalendar(calendarId: String, email: String): Result<Boolean> {
+        return try {
+            firebaseFirestore.collection("calendars")
+                .document(calendarId)
+                .update("members", FieldValue.arrayRemove(email))
+            Result.success(true)
+        } catch (e: Exception) {
+            Result.failure(Exception("Ocurrió un error al obtener el usuario"))
+        }
+    }
+
 }

@@ -13,6 +13,7 @@ import com.aramonp.workly.presentation.screen.calendar.event.EventScreen
 import com.aramonp.workly.presentation.screen.calendar.settings.CalendarSettingsScreen
 import com.aramonp.workly.presentation.screen.profile.ProfileScreen
 import com.aramonp.workly.presentation.screen.profile.settings.SettingsScreen
+import com.aramonp.workly.presentation.screen.calendar.settings.member.MemberScreen
 
 @Composable
 fun NavGraph(navHostController: NavHostController, startDestination: String) {
@@ -52,6 +53,13 @@ fun NavGraph(navHostController: NavHostController, startDestination: String) {
             val id = backStackEntry.arguments?.getString("id") ?: ""
             CalendarScreen(
                 calendarId = id,
+                navController = navHostController
+            )
+        }
+        composable(Route.MemberScreen.route) { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("id") ?: ""
+            MemberScreen(
+                id = id,
                 navController = navHostController
             )
         }
