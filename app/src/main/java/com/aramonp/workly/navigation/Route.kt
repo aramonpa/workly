@@ -21,4 +21,9 @@ sealed class Route (val route: String) {
             return "calendarSettingsScreen/$id"
         }
     }
+    data object MemberScreen : Route(route = "MemberScreen/{id}") {
+        fun createRoute(id: String): String {
+            return "MemberScreen/$id"
+        }
+    }
 }

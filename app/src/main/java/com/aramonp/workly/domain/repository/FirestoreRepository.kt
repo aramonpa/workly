@@ -8,10 +8,11 @@ import java.time.LocalDate
 interface FirestoreRepository {
     suspend fun createUser(user: User): Result<User>
     suspend fun getUser(id: String): Result<User?>
+    suspend fun getUserByEmail(email: String): Result<User?>
     suspend fun updateUser(uid: String, userMap: Map<String, Any>): Result<Boolean>
     suspend fun createCalendar(calendar: Calendar): Result<String>
     suspend fun getCalendar(calendarId: String): Result<Calendar?>
-    suspend fun getAllCalendarsByUser(uid: String): Result<List<Calendar>>
+    suspend fun getAllCalendarsByUser(email: String): Result<List<Calendar>>
     suspend fun updateCalendar(calendarId: String, calendarMap: Map<String, Any>): Result<Boolean>
     suspend fun addEvent(calendarId: String, event: Event): Result<Event>
     suspend fun getAllEventsByDay(calendarId: String, date: LocalDate): Result<List<Event>>
@@ -22,4 +23,7 @@ interface FirestoreRepository {
     suspend fun addTeamToCalendar(calendarId: String, teamName: String): Result<String>
     suspend fun deleteTeamToCalendar(calendarId: String, teamName: String): Result<String>
     suspend fun getTeams(calendarId: String): Result<List<String>>
+    suspend fun getMembers(calendarId: String): Result<List<String>>
+    suspend fun addMemberToCalendar(calendarId: String, email: String): Result<String>
+    suspend fun deleteMemberOfCalendar(calendarId: String, email: String): Result<Boolean>
 }

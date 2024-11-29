@@ -64,7 +64,7 @@ class HomeViewModel @Inject constructor(
         firebaseUser?.uid?.let { uid ->
             getUserInfo(uid)
                 .onSuccess { user ->
-                    fetchUserCalendars(uid, user!!)
+                    fetchUserCalendars(user!!.email, user)
                 }
                 .onFailure { error ->
                     UiState.Error(error.message.orEmpty())
@@ -72,8 +72,8 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private suspend fun fetchUserCalendars(uid: String, user: User) {
-        val calendarResult = getCalendarsByUser(uid)
+    private suspend fun fetchUserCalendars(email: String, user: User) {
+        val calendarResult = getCalendarsByUser(email)
         calendarResult
             .onSuccess { calendars ->
                 _calendarList.value = calendars
@@ -90,8 +90,8 @@ class HomeViewModel @Inject constructor(
         return firestoreRepository.getUser(uid)
     }
 
-    private suspend fun getCalendarsByUser(uid: String): Result<List<Calendar>> {
-        return firestoreRepository.getAllCalendarsByUser(uid)
+    private suspend fun getCalendarsByUser(email: String): Result<List<Calendar>> {
+        return firestoreRepository.getAllCalendarsByUser(email)
     }
 
     suspend fun createCalendar() {
@@ -102,16 +102,16 @@ class HomeViewModel @Inject constructor(
         }
 
         val currentUser = authRepository.getCurrentUser().getOrNull()
-        val uid = currentUser?.uid!!
 
         val calendar = Calendar(
             name = _calendarName.value,
             description = _calendarDescription.value,
-            ownerId = uid,
+            ownerId = currentUser?.uid!!,
             createdAt = Timestamp.now(),
-            members = listOf(uid)
+            members = listOf(currentUser.email!!)
         )
 
+        //TODO: Fix add to calendarList
         firestoreRepository.createCalendar(calendar)
             .onSuccess {
                 calendar.uid = it

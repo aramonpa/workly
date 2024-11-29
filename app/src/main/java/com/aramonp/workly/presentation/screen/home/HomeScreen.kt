@@ -283,7 +283,7 @@ fun ShowDialogSurface(viewModel: HomeViewModel, name: String, description: Strin
                         onClick = {
                             coroutineScope.launch {
                                 viewModel.createCalendar()
-                                if (calendarNameError != null && calendarDescriptionError != null) {
+                                if (calendarNameError == null && calendarDescriptionError == null) {
                                     viewModel.onNameChange("")
                                     viewModel.onDescriptionChange("")
                                     onDismiss()
