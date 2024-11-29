@@ -2,6 +2,7 @@ package com.aramonp.workly.presentation.screen.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aramonp.workly.data.repository.AuthRepositoryImpl
 import com.aramonp.workly.data.repository.FirestoreRepositoryImpl
 import com.aramonp.workly.domain.model.Calendar
@@ -44,27 +45,27 @@ class HomeViewModel @Inject constructor(
     val calendarDescriptionError: StateFlow<String?> = _calendarDescriptionError
 
     init {
-        fetchUser()
+        viewModelScope.launch {
+            fetchUser()
+            fetchUserCalendars()
+        }
     }
 
-    private fun fetchUser() {
+    private suspend fun fetchUser() {
         _userState.value = UiState.Loading
-        viewModelScope.launch {
             val authResult = authRepository.getCurrentUser()
-            authResult.fold(
-                onSuccess = { user -> handleUser(user) },
-                onFailure = { error ->
-                    UiState.Error(error.message.orEmpty())
+            authResult
+                .onSuccess { user -> handleUser(user) }
+                .onFailure { error ->
+                    _userState.value = UiState.Error(error.message.orEmpty())
                 }
-            )
-        }
     }
 
     private suspend fun handleUser(firebaseUser: FirebaseUser?) {
         firebaseUser?.uid?.let { uid ->
             getUserInfo(uid)
                 .onSuccess { user ->
-                    fetchUserCalendars(user!!.email, user)
+                    _userState.value = UiState.Success(user!!)
                 }
                 .onFailure { error ->
                     UiState.Error(error.message.orEmpty())
@@ -72,12 +73,12 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private suspend fun fetchUserCalendars(email: String, user: User) {
-        val calendarResult = getCalendarsByUser(email)
+    suspend fun fetchUserCalendars() {
+        val user = _userState.value as UiState.Success<User>
+        val calendarResult = getCalendarsByUser(user.data.email)
         calendarResult
             .onSuccess { calendars ->
                 _calendarList.value = calendars
-                _userState.value = UiState.Success(user)
                 _calendarListState.value = UiState.Success(calendars)
             }
             .onFailure { error ->

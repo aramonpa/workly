@@ -21,6 +21,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +30,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -56,6 +59,7 @@ import com.aramonp.workly.domain.model.User
 import com.aramonp.workly.navigation.Route
 import com.aramonp.workly.presentation.component.BottomNavigationBar
 import com.aramonp.workly.presentation.component.OutlinedFormTextField
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
@@ -88,6 +92,7 @@ fun HomeScreen(onNavigateToCalendar: (String) -> Unit, navController: NavHostCon
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeContent(
     user: User,
@@ -99,6 +104,9 @@ fun HomeContent(
     var showDialog by remember { mutableStateOf(false) }
     val calendarName: String by viewModel.calendarName.collectAsState()
     val calendarDescription: String by viewModel.calendarDescription.collectAsState()
+    val refreshState = rememberPullToRefreshState()
+    var isRefreshing by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold (
         modifier = Modifier.fillMaxSize(),
@@ -138,14 +146,26 @@ fun HomeContent(
                 CircularProgressIndicator()
             }
             is UiState.Success  -> {
-                CalendarList(
-                    Modifier
-                        .padding(it)
-                        .padding(top = 16.dp, start = 16.dp, end = 16.dp),
-                    calendarListState.data.size,
-                    calendarListState.data,
-                    navController
-                )
+                PullToRefreshBox(
+                    state = refreshState,
+                    isRefreshing = isRefreshing,
+                    onRefresh = {
+                        coroutineScope.launch {
+                            isRefreshing = true
+                            viewModel.fetchUserCalendars()
+                            isRefreshing = false
+                        }
+                    }
+                ) {
+                    CalendarList(
+                        Modifier
+                            .padding(it)
+                            .padding(top = 16.dp, start = 16.dp, end = 16.dp),
+                        calendarListState.data.size,
+                        calendarListState.data,
+                        navController
+                    )
+                }
             }
             is UiState.Error -> {
                 Text(text = calendarListState.message)
