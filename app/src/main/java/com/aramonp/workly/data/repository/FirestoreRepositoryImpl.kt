@@ -9,6 +9,7 @@ import com.aramonp.workly.util.convertLocalDateToTimestamp
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.toObjects
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
@@ -96,6 +97,7 @@ class FirestoreRepositoryImpl @Inject constructor(
                 firebaseFirestore
                     .collection("calendars")
                     .whereArrayContains("members", email)
+                    .orderBy("createdAt", Query.Direction.DESCENDING)
                     .get()
                     .await()
                     .documents

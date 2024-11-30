@@ -2,10 +2,10 @@ package com.aramonp.workly.presentation.screen.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aramonp.workly.data.repository.AuthRepositoryImpl
 import com.aramonp.workly.data.repository.FirestoreRepositoryImpl
 import com.aramonp.workly.domain.model.Calendar
+import com.aramonp.workly.domain.model.CalendarFormState
 import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.domain.model.User
 import com.aramonp.workly.domain.use_case.ValidateField
@@ -30,19 +30,11 @@ class HomeViewModel @Inject constructor(
     private val _calendarListState = MutableStateFlow<UiState<List<Calendar>>>(UiState.Loading)
     val calendarListState: StateFlow<UiState<List<Calendar>>> = _calendarListState
 
-    private val _calendarList = MutableStateFlow<List<Calendar>>(emptyList())
+    private val _calendarFormState = MutableStateFlow(CalendarFormState())
+    val calendarFormState: StateFlow<CalendarFormState> = _calendarFormState
 
-    private val _calendarName = MutableStateFlow("")
-    val calendarName: StateFlow<String> = _calendarName
-
-    private val _calendarNameError = MutableStateFlow<String?>(null)
-    val calendarNameError: StateFlow<String?> = _calendarNameError
-
-    private val _calendarDescription = MutableStateFlow("")
-    val calendarDescription: StateFlow<String> = _calendarDescription
-
-    private val _calendarDescriptionError = MutableStateFlow<String?>(null)
-    val calendarDescriptionError: StateFlow<String?> = _calendarDescriptionError
+    private val _validationState = MutableStateFlow(false)
+    val validationState: StateFlow<Boolean> = _validationState
 
     init {
         viewModelScope.launch {
@@ -78,15 +70,42 @@ class HomeViewModel @Inject constructor(
         val calendarResult = getCalendarsByUser(user.data.email)
         calendarResult
             .onSuccess { calendars ->
-                _calendarList.value = calendars
                 _calendarListState.value = UiState.Success(calendars)
             }
             .onFailure { error ->
-                _userState.value = UiState.Error(error.message.orEmpty())
+                _calendarListState.value = UiState.Error(error.message.orEmpty())
             }
     }
 
-    // TODO: Review if it's better to use simple Types
+    suspend fun createCalendar() {
+        if (validateFields()) {
+            _validationState.value = true
+        } else {
+            _validationState.value = false
+            return
+        }
+
+        val currentUser = authRepository.getCurrentUser().getOrNull()
+
+        val calendar = Calendar(
+            name = _calendarFormState.value.name,
+            description = _calendarFormState.value.description,
+            ownerId = currentUser?.uid!!,
+            createdAt = Timestamp.now(),
+            members = listOf(currentUser.email!!)
+        )
+
+        firestoreRepository.createCalendar(calendar)
+            .onSuccess {
+                calendar.uid = it
+                val currentCalendars = (_calendarListState.value as? UiState.Success<List<Calendar>>)?.data.orEmpty()
+                _calendarListState.value = UiState.Success(currentCalendars + calendar)
+            }
+            .onFailure {
+                _calendarListState.value = UiState.Error(it.message.orEmpty())
+            }
+    }
+
     private suspend fun getUserInfo(uid: String): Result<User?> {
         return firestoreRepository.getUser(uid)
     }
@@ -95,49 +114,34 @@ class HomeViewModel @Inject constructor(
         return firestoreRepository.getAllCalendarsByUser(email)
     }
 
-    suspend fun createCalendar() {
-        //_calendarListState.value = UiState.Loading
-
-        if (!validateFields()) {
-            return
-        }
-
-        val currentUser = authRepository.getCurrentUser().getOrNull()
-
-        val calendar = Calendar(
-            name = _calendarName.value,
-            description = _calendarDescription.value,
-            ownerId = currentUser?.uid!!,
-            createdAt = Timestamp.now(),
-            members = listOf(currentUser.email!!)
-        )
-
-        //TODO: Fix add to calendarList
-        firestoreRepository.createCalendar(calendar)
-            .onSuccess {
-                calendar.uid = it
-                _calendarList.value += calendar
-                _calendarListState.value = UiState.Success(_calendarList.value)
-            }
-            .onFailure { _calendarListState.value = UiState.Error(it.message.orEmpty()) }
-    }
-
     fun onNameChange(name: String) {
-        _calendarName.value = name
+        _calendarFormState.value = _calendarFormState.value.copy(name = name)
     }
 
     fun onDescriptionChange(description: String) {
-        _calendarDescription.value = description
+        _calendarFormState.value = _calendarFormState.value.copy(description = description)
     }
 
     private fun validateFields(): Boolean {
-        val nameValidation = validateField(_calendarName.value)
-        val descriptionValidation = validateField(_calendarDescription.value)
+        val nameValidation = validateField(_calendarFormState.value.name)
+        val descriptionValidation = validateField(_calendarFormState.value.description)
 
-        _calendarNameError.value = nameValidation.errorMessage
-        _calendarDescriptionError.value = descriptionValidation.errorMessage
+        _calendarFormState.value = _calendarFormState.value.copy(
+            nameError = nameValidation.errorMessage,
+            descriptionError = descriptionValidation.errorMessage
+        )
 
         return nameValidation.success && descriptionValidation.success
     }
 
+    fun clearErrors() {
+        _calendarFormState.value = _calendarFormState.value.copy(
+            nameError = null,
+            descriptionError = null
+        )
+    }
+
+    fun clearFields() {
+        _calendarFormState.value = CalendarFormState()
+    }
 }

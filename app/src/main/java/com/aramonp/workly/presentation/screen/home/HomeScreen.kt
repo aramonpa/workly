@@ -54,12 +54,15 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.aramonp.workly.R
 import com.aramonp.workly.domain.model.Calendar
+import com.aramonp.workly.domain.model.CalendarFormState
 import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.domain.model.User
 import com.aramonp.workly.navigation.Route
 import com.aramonp.workly.presentation.component.BottomNavigationBar
 import com.aramonp.workly.presentation.component.OutlinedFormTextField
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 @Composable
@@ -101,12 +104,11 @@ fun HomeContent(
     navigation: (String) -> Unit,
     navController: NavHostController
 ) {
+    val coroutineScope = rememberCoroutineScope()
     var showDialog by remember { mutableStateOf(false) }
-    val calendarName: String by viewModel.calendarName.collectAsState()
-    val calendarDescription: String by viewModel.calendarDescription.collectAsState()
+    val calendarFormState by viewModel.calendarFormState.collectAsState()
     val refreshState = rememberPullToRefreshState()
     var isRefreshing by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
 
     Scaffold (
         modifier = Modifier.fillMaxSize(),
@@ -138,7 +140,7 @@ fun HomeContent(
         }
     ) {
         if (showDialog) {
-            ShowDialogSurface(viewModel, calendarName, calendarDescription, onDismiss = { showDialog = false })
+            ShowDialogSurface(viewModel, calendarFormState, onDismiss = { showDialog = false })
         }
 
         when (calendarListState) {
@@ -253,12 +255,17 @@ fun CalendarItem(name: String, description: String, id: String, navController: N
 }
 
 @Composable
-fun ShowDialogSurface(viewModel: HomeViewModel, name: String, description: String, onDismiss: () -> Unit = {}) {
-    val calendarNameError by viewModel.calendarNameError.collectAsState()
-    val calendarDescriptionError by viewModel.calendarDescriptionError.collectAsState()
+fun ShowDialogSurface(viewModel: HomeViewModel, calendarFormState: CalendarFormState, onDismiss: () -> Unit = {}) {
     val coroutineScope = rememberCoroutineScope()
+    val validationState by viewModel.validationState.collectAsState()
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(
+        onDismissRequest = {
+            viewModel.clearErrors()
+            viewModel.clearFields()
+            onDismiss()
+        }
+    ) {
         Surface(
             shape = MaterialTheme.shapes.large,
             tonalElevation = 3.dp
@@ -271,22 +278,22 @@ fun ShowDialogSurface(viewModel: HomeViewModel, name: String, description: Strin
                 Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedFormTextField(
-                    name,
+                    calendarFormState.name,
                     "Nombre",
                     { value -> viewModel.onNameChange(value.trim()) },
                     Modifier.fillMaxWidth(),
                     KeyboardOptions(keyboardType = KeyboardType.Text),
-                    isError = calendarNameError != null,
-                    errorMessage = calendarNameError
+                    isError = calendarFormState.nameError != null,
+                    errorMessage = calendarFormState.nameError
                 )
                 OutlinedFormTextField(
-                    description,
+                    calendarFormState.description,
                     "Descripción",
                     { value -> viewModel.onDescriptionChange(value.trim()) },
                     Modifier.fillMaxWidth(),
                     KeyboardOptions(keyboardType = KeyboardType.Text),
-                    isError = calendarDescriptionError != null,
-                    errorMessage = calendarDescriptionError
+                    isError = calendarFormState.descriptionError != null,
+                    errorMessage = calendarFormState.descriptionError
                 )
 
                 Row(
@@ -294,7 +301,11 @@ fun ShowDialogSurface(viewModel: HomeViewModel, name: String, description: Strin
                 ) {
                     TextButton(
                         modifier = Modifier.padding(8.dp),
-                        onClick = onDismiss
+                        onClick = {
+                            viewModel.clearErrors()
+                            viewModel.clearFields()
+                            onDismiss()
+                        }
                     ) {
                         Text("Cerrar")
                     }
@@ -303,9 +314,8 @@ fun ShowDialogSurface(viewModel: HomeViewModel, name: String, description: Strin
                         onClick = {
                             coroutineScope.launch {
                                 viewModel.createCalendar()
-                                if (calendarNameError == null && calendarDescriptionError == null) {
-                                    viewModel.onNameChange("")
-                                    viewModel.onDescriptionChange("")
+                                if (validationState) {
+                                    viewModel.clearFields()
                                     onDismiss()
                                 }
                             }
