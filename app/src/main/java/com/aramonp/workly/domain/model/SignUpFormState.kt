@@ -1,8 +1,5 @@
 package com.aramonp.workly.domain.model
 
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-
 data class SignUpFormState(
     val name: String = "",
     val nameError: String? = null,

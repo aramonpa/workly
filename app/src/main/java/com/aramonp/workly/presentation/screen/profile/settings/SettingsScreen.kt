@@ -12,7 +12,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -27,11 +26,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewModel = hiltViewModel()) {
     val settingsState = viewModel.settingsState.collectAsState()
-    val nameError by viewModel.nameError.collectAsState()
-    val surnameError by viewModel.surnameError.collectAsState()
-    val userNameError by viewModel.userNameError.collectAsState()
+    val settingsFormState = viewModel.settingsFormState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
-
 
     Scaffold(
         topBar = {
@@ -62,8 +58,8 @@ fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewMode
                     LabeledField(
                         "Nombre",
                         state.data.name,
-                        isError = nameError != null,
-                        errorMessage = nameError
+                        isError = settingsFormState.value.nameError != null,
+                        errorMessage = settingsFormState.value.nameError
                     ) { value ->
                         coroutineScope.launch {
                             viewModel.onNameChange(value)
@@ -74,8 +70,8 @@ fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewMode
                     LabeledField(
                         "Apellidos",
                         state.data.surname,
-                        isError = surnameError != null,
-                        errorMessage = surnameError
+                        isError = settingsFormState.value.surnameError != null,
+                        errorMessage = settingsFormState.value.surnameError
                     ) { value ->
                         coroutineScope.launch {
                             viewModel.onSurnameChange(value)
@@ -86,8 +82,8 @@ fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewMode
                     LabeledField(
                         "Nombre de usuario",
                         state.data.username,
-                        isError = userNameError != null,
-                        errorMessage = userNameError
+                        isError = settingsFormState.value.usernameError != null,
+                        errorMessage = settingsFormState.value.usernameError
                     ) { value ->
                         coroutineScope.launch {
                             viewModel.onUsernameChange(value)
@@ -100,6 +96,5 @@ fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewMode
                 Text(text = (settingsState.value as UiState.Error).message)
             }
         }
-
     }
 }
