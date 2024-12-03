@@ -38,12 +38,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.aramonp.workly.R
 import com.aramonp.workly.domain.model.Calendar
 import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.presentation.component.AlertDialogTask
@@ -76,7 +78,8 @@ fun MemberScreen(id: String, navController: NavHostController, viewModel: Member
                         navController.popBackStack()
                     }
                 ) {
-                    Image(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                    Image(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(
+                        R.string.back_text))
                 }
             }
         }
@@ -93,7 +96,7 @@ fun MemberScreen(id: String, navController: NavHostController, viewModel: Member
                         .padding(16.dp)
                 ) {
                     DetailedList(
-                        title = "Miembros del calendario",
+                        title = stringResource(R.string.calendar_members_title),
                         items = state.data,
                         onDelete = { value ->
                             coroutineScope.launch {
@@ -137,7 +140,7 @@ fun DetailedList(
                 showAlertDialog.value = true
             }
         ) {
-            Image(imageVector = Icons.Default.Add, contentDescription = "Añadir")
+            Image(imageVector = Icons.Default.Add, contentDescription = stringResource(R.string.add_member_description))
 
         }
     }
@@ -157,7 +160,7 @@ fun DetailedList(
             onConfirmation = {
                 onConfirmation(it)
             },
-            dialogTitle = "Nuevo miembro",
+            dialogTitle = stringResource(R.string.new_member_dialog_title),
             dialogText = "",
             isError = errorMessage != null,
             errorMessage = errorMessage
@@ -176,12 +179,12 @@ fun DetailedItem(index: Int, member: String, onDelete: (String) -> Unit) {
         Spacer(modifier = Modifier.weight(1f))
 
         if (index == 0) {
-           Text("(propietario)")
+           Text(stringResource(R.string.owner_tag))
         } else {
             IconButton (
                 onClick = { showAlertDialog.value = true }
             ) {
-                Image(imageVector = Icons.Default.Clear, contentDescription = "Eliminar")
+                Image(imageVector = Icons.Default.Clear, contentDescription = stringResource(R.string.delete_text))
             }
         }
     }
@@ -189,14 +192,14 @@ fun DetailedItem(index: Int, member: String, onDelete: (String) -> Unit) {
         AlertDialogTask(
             onDismissRequest = { showAlertDialog.value = false },
             onConfirmation = { onDelete(member) },
-            dialogTitle = "¿Está seguro?",
-            dialogText = "La operación de eliminar un miembro no se puede deshacer.",
+            dialogTitle = stringResource(R.string.asking_alert_text),
+            dialogText = stringResource(R.string.altert_dialog_member_description),
             icon = Icons.Default.Info,
-            iconDescription = "Aviso"
+            iconDescription = stringResource(R.string.notice_text)
         )
     }
 }
-
+/*
 @Composable
 fun ShowDialogSurface(viewModel: MemberViewModel, onDismiss: () -> Unit = {}, errorMessage: String?) {
     val coroutineScope = rememberCoroutineScope()
@@ -249,4 +252,4 @@ fun ShowDialogSurface(viewModel: MemberViewModel, onDismiss: () -> Unit = {}, er
             }
         }
     }
-}
+}*/

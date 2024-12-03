@@ -14,9 +14,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.aramonp.workly.R
 import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.domain.model.User
 import com.aramonp.workly.presentation.component.CircularProgress
@@ -40,7 +42,10 @@ fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewMode
                         navController.popBackStack()
                     }
                 ) {
-                    Image(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                    Image(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(
+                        R.string.back_text
+                    )
+                    )
                 }
             }
         }
@@ -57,7 +62,7 @@ fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewMode
                         .padding(16.dp)
                 ) {
                     LabeledField(
-                        "Nombre",
+                        stringResource(R.string.name_label),
                         state.data.name,
                         isError = settingsFormState.value.nameError != null,
                         errorMessage = settingsFormState.value.nameError,
@@ -73,7 +78,7 @@ fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewMode
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
                     LabeledField(
-                        "Apellidos",
+                        stringResource(R.string.surname_label),
                         state.data.surname,
                         isError = settingsFormState.value.surnameError != null,
                         errorMessage = settingsFormState.value.surnameError,
@@ -89,7 +94,7 @@ fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewMode
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
                     LabeledField(
-                        "Nombre de usuario",
+                        stringResource(R.string.username_label),
                         state.data.username,
                         isError = settingsFormState.value.usernameError != null,
                         errorMessage = settingsFormState.value.usernameError,

@@ -40,11 +40,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.aramonp.workly.R
 import com.aramonp.workly.domain.model.Event
 import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.presentation.component.AlertDialogTask
@@ -60,7 +62,6 @@ fun EventScreen(calendarId: String, eventId: String, navController: NavHostContr
     val eventFormState = viewModel.eventFormState.collectAsState()
     val validationState = viewModel.validationState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
-
 
     LaunchedEffect(calendarId, eventId) {
         if (calendarId.isNotEmpty() && eventId.isNotEmpty()) {
@@ -87,7 +88,7 @@ fun EventScreen(calendarId: String, eventId: String, navController: NavHostContr
                 ) {
                     item {
                         LabeledField(
-                            "Título",
+                            stringResource(R.string.title_label),
                             state.data.title,
                             isError = eventFormState.value.titleError != null,
                             errorMessage = eventFormState.value.titleError,
@@ -107,7 +108,7 @@ fun EventScreen(calendarId: String, eventId: String, navController: NavHostContr
                     }
                     item {
                         LabeledField(
-                            "Descripción",
+                            stringResource(R.string.description_label),
                             state.data.description,
                             isError = eventFormState.value.descriptionError != null,
                             errorMessage = eventFormState.value.descriptionError,
@@ -127,9 +128,9 @@ fun EventScreen(calendarId: String, eventId: String, navController: NavHostContr
                     }
                     item {
                         DateTimePickerField(
-                            label = "Fecha inicio",
-                            dateLabel = "Fecha inicio",
-                            timeLabel = "Hora inicio",
+                            label = stringResource(R.string.start_date_label),
+                            dateLabel = stringResource(R.string.start_date_label),
+                            timeLabel = stringResource(R.string.start_time_label),
                             value = state.data.startDateTime,
                             isError = eventFormState.value.datesError != null,
                             onConfirmation = { value ->
@@ -145,9 +146,9 @@ fun EventScreen(calendarId: String, eventId: String, navController: NavHostContr
                     }
                     item {
                         DateTimePickerField(
-                            label = "Fecha fin",
-                            dateLabel = "Fecha fin",
-                            timeLabel = "Hora fin",
+                            label = stringResource(R.string.end_date_label),
+                            dateLabel = stringResource(R.string.end_date_label),
+                            timeLabel = stringResource(R.string.end_time_label),
                             value = state.data.endDateTime,
                             isError = eventFormState.value.datesError != null,
                             onConfirmation = { value ->
@@ -166,7 +167,7 @@ fun EventScreen(calendarId: String, eventId: String, navController: NavHostContr
                     }
                     item {
                         LabeledField(
-                            "Localización",
+                            stringResource(R.string.location_label),
                             state.data.location ?: "",
                             isError = false,
                             errorMessage = null,
@@ -186,7 +187,7 @@ fun EventScreen(calendarId: String, eventId: String, navController: NavHostContr
                     }
                     item {
                         LabeledDropDownMenu(
-                            label = "Asignado",
+                            label = stringResource(R.string.assignee_label),
                             value = state.data.assignee,
                             teams = teams.value,
                             errorMessage = eventFormState.value.assigneeError,
@@ -223,7 +224,7 @@ fun EventTopBar(viewModel: EventViewModel, navController: NavHostController) {
                 navController.popBackStack()
             }
         ) {
-            Image(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+            Image(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_text))
         }
         Spacer(modifier = Modifier.weight(1f))
         Box {
@@ -232,7 +233,7 @@ fun EventTopBar(viewModel: EventViewModel, navController: NavHostController) {
                     expanded = true
                 }
             ) {
-                Image(imageVector = Icons.Default.MoreVert, contentDescription = "Más")
+                Image(imageVector = Icons.Default.MoreVert, contentDescription = stringResource(R.string.more_text))
 
             }
             DropdownMenu(
@@ -240,7 +241,7 @@ fun EventTopBar(viewModel: EventViewModel, navController: NavHostController) {
                 onDismissRequest = { expanded = false }
             ) {
                 DropdownMenuItem(
-                    text = { Text("Eliminar") },
+                    text = { Text(stringResource(R.string.delete_text)) },
                     onClick = {
                         showAlertDialog.value = true
                     }
@@ -257,10 +258,10 @@ fun EventTopBar(viewModel: EventViewModel, navController: NavHostController) {
                         navController.popBackStack()
                     }
                 },
-                dialogTitle = "¿Está seguro?",
-                dialogText = "La operación de eliminar un evento no se puede deshacer.",
+                dialogTitle = stringResource(R.string.asking_alert_text),
+                dialogText = stringResource(R.string.alert_dialog_event_description),
                 icon = Icons.Default.Info,
-                iconDescription = "Aviso"
+                iconDescription = stringResource(R.string.notice_text)
             )
         }
     }
@@ -287,7 +288,7 @@ fun LabeledDropDownMenu(label: String, value: String, teams: List<String>, onCon
             IconButton(onClick = { showDialog.value = true }) {
                 Icon(
                     imageVector = Icons.Default.Edit,
-                    contentDescription = "Editar"
+                    contentDescription = stringResource(R.string.edit_text)
                 )
             }
         }
@@ -345,14 +346,14 @@ fun LabeledDropDownMenu(label: String, value: String, teams: List<String>, onCon
                             showDialog.value = false
                         }
                     ) {
-                        Text("Aceptar")
+                        Text(stringResource(R.string.confirm_dialog_text))
                     }
                 },
                 dismissButton = {
                     TextButton(
                         onClick = { showDialog.value = false }
                     ) {
-                        Text("Cancelar")
+                        Text(stringResource(R.string.dismiss_dialog_text))
                     }
                 }
             )

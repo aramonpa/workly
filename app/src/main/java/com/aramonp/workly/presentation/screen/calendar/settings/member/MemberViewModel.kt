@@ -68,7 +68,6 @@ class MemberViewModel @Inject constructor(
             currentMembers.remove(member)
         }
 
-        // Emitir el nuevo estado encapsulado en `UIState.Success`
         _memberState.value = UiState.Success(currentMembers)
     }
 

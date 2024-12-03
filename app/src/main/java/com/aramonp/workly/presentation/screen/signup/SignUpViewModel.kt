@@ -1,6 +1,5 @@
 package com.aramonp.workly.presentation.screen.signup
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.aramonp.workly.data.repository.AuthRepositoryImpl
 import com.aramonp.workly.data.repository.FirestoreRepositoryImpl
@@ -89,7 +88,7 @@ class SignUpViewModel @Inject constructor(
     }
 
     fun onRepeatedPasswordChange(password: String) {
-        _signUpFormState.value = _signUpFormState.value.copy(repeatedPassword = password)
+        _signUpFormState.value = _signUpFormState.value.copy(confirmPassword = password)
     }
 
     private fun validateFields(): Boolean {
@@ -98,7 +97,7 @@ class SignUpViewModel @Inject constructor(
         val usernameValidation = validateField(_signUpFormState.value.username)
         val emailValidation = validateEmail(_signUpFormState.value.email)
         val passwordValidation = validatePassword(_signUpFormState.value.password)
-        val repeatedPasswordValidation = validateRepeatedPassword(_signUpFormState.value.password, _signUpFormState.value.repeatedPassword)
+        val repeatedPasswordValidation = validateRepeatedPassword(_signUpFormState.value.password, _signUpFormState.value.confirmPassword)
 
         _signUpFormState.value = _signUpFormState.value.copy(
             nameError = nameValidation.errorMessage,
@@ -106,7 +105,7 @@ class SignUpViewModel @Inject constructor(
             usernameError = usernameValidation.errorMessage,
             emailError = emailValidation.errorMessage,
             passwordError = passwordValidation.errorMessage,
-            repeatedPasswordError = repeatedPasswordValidation.errorMessage
+            confirmPasswordError = repeatedPasswordValidation.errorMessage
         )
 
         return nameValidation.success && surnameValidation.success && usernameValidation.success &&

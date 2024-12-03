@@ -39,7 +39,7 @@ class LogInViewModel @Inject constructor(
                 _authState.emit(AuthState.Success(it))
             }
             .onFailure {
-                _authState.emit(AuthState.Error(it.message ?: "Error desconocido"))
+                _authState.emit(AuthState.Error(it.message.orEmpty()))
             }
     }
 

@@ -43,12 +43,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.aramonp.workly.R
 import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.navigation.Route
 import com.aramonp.workly.presentation.component.AlertDialogTask
@@ -82,7 +84,8 @@ fun CalendarSettingsScreen(id: String, navController: NavHostController, viewMod
                         navController.popBackStack()
                     }
                 ) {
-                    Image(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                    Image(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(
+                        R.string.back_text),)
                 }
             }
         }
@@ -100,7 +103,7 @@ fun CalendarSettingsScreen(id: String, navController: NavHostController, viewMod
                 ) {
                     //TODO: Fix values that are modified when exist errors.
                     LabeledField(
-                        "Nombre",
+                        stringResource(R.string.name_label),
                         state.data.name,
                         isError = calendarSettingsFormState.nameError != null,
                         errorMessage = calendarSettingsFormState.nameError,
@@ -116,7 +119,7 @@ fun CalendarSettingsScreen(id: String, navController: NavHostController, viewMod
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
                     LabeledField(
-                        "Descripción",
+                        stringResource(R.string.description_label),
                         state.data.description,
                         isError = calendarSettingsFormState.descriptionError != null,
                         errorMessage = calendarSettingsFormState.descriptionError,
@@ -132,12 +135,12 @@ fun CalendarSettingsScreen(id: String, navController: NavHostController, viewMod
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
                     MemberField(
-                        label = "Miembros",
-                        title = "Modifica miembros del calendario"
+                        label = stringResource(R.string.members_title),
+                        title = stringResource(R.string.members_description)
                     ) { navController.navigate(Route.MemberScreen.createRoute(id)) }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
                     DetailedList(
-                        title = "Equipos de trabajo",
+                        title = stringResource(R.string.teams_title),
                         items = state.data.teams,
                         validationState = validationState,
                         onDelete = {
@@ -183,7 +186,7 @@ fun DetailedList(
                 showAlertDialog.value = true
             }
         ) {
-            Image(imageVector = Icons.Default.Add, contentDescription = "Añadir")
+            Image(imageVector = Icons.Default.Add, contentDescription = stringResource(R.string.add_team_text))
 
         }
     }
@@ -206,7 +209,7 @@ fun DetailedList(
                 }
                 onConfirmation(it)
             },
-            dialogTitle = "Nuevo equipo de trabajo",
+            dialogTitle = stringResource(R.string.new_team_title),
             dialogText = "",
             isError = errorMessage != null,
             errorMessage = errorMessage
@@ -226,17 +229,17 @@ fun DetailedItem(team: String, onDelete: (String) -> Unit) {
         IconButton (
             onClick = { showAlertDialog.value = true }
         ) {
-            Image(imageVector = Icons.Default.Clear, contentDescription = "Eliminar")
+            Image(imageVector = Icons.Default.Clear, contentDescription = stringResource(R.string.delete_text))
         }
     }
     if (showAlertDialog.value) {
         AlertDialogTask(
             onDismissRequest = { showAlertDialog.value = false },
             onConfirmation = { onDelete(team) },
-            dialogTitle = "¿Está seguro?",
-            dialogText = "La operación de eliminar un equipo no se puede deshacer.",
+            dialogTitle = stringResource(R.string.asking_alert_text),
+            dialogText = stringResource(R.string.alert_dialog_team_description),
             icon = Icons.Default.Info,
-            iconDescription = "Aviso"
+            iconDescription = stringResource(R.string.notice_text)
         )
     }
 }
@@ -259,7 +262,7 @@ fun MemberField(label: String, title: String, onClick: () -> Unit) {
                 IconButton(onClick = onClick) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "Ir"
+                        contentDescription = stringResource(R.string.go_members_text)
                     )
                 }
             }

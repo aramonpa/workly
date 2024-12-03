@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -54,7 +55,7 @@ fun SignUpScreen(onNavigateToLogIn: () -> Unit = {}, onNavigateToHome: () -> Uni
             Spacer(modifier = Modifier.weight(1f))
             OutlinedFormTextField(
                 signUpFormState.value.name,
-                "Nombre",
+                stringResource(R.string.name_label),
                 { value -> viewModel.onNameChange(value.trim()) },
                 Modifier.fillMaxWidth(),
                 KeyboardOptions(keyboardType = KeyboardType.Text),
@@ -63,7 +64,7 @@ fun SignUpScreen(onNavigateToLogIn: () -> Unit = {}, onNavigateToHome: () -> Uni
             )
             OutlinedFormTextField(
                 signUpFormState.value.surname,
-                "Apellidos",
+                stringResource(R.string.surname_label),
                 { value -> viewModel.onSurnameChange(value.trim()) },
                 Modifier.fillMaxWidth(),
                 KeyboardOptions(keyboardType = KeyboardType.Text),
@@ -72,7 +73,7 @@ fun SignUpScreen(onNavigateToLogIn: () -> Unit = {}, onNavigateToHome: () -> Uni
             )
             OutlinedFormTextField(
                 signUpFormState.value.email,
-                "Email",
+                stringResource(R.string.email_label),
                 { value -> viewModel.onEmailChange(value.trim()) },
                 Modifier.fillMaxWidth(),
                 KeyboardOptions(keyboardType = KeyboardType.Email),
@@ -81,7 +82,7 @@ fun SignUpScreen(onNavigateToLogIn: () -> Unit = {}, onNavigateToHome: () -> Uni
             )
             OutlinedFormTextField(
                 signUpFormState.value.username,
-                "Nombre de usuario",
+                stringResource(R.string.username_label),
                 { value -> viewModel.onUsernameChange(value.trim()) },
                 Modifier.fillMaxWidth(),
                 KeyboardOptions(keyboardType = KeyboardType.Text),
@@ -90,7 +91,7 @@ fun SignUpScreen(onNavigateToLogIn: () -> Unit = {}, onNavigateToHome: () -> Uni
             )
             OutlinedFormTextField(
                 signUpFormState.value.password,
-                "Contraseña",
+                stringResource(R.string.password_label),
                 { value -> viewModel.onPasswordChange(value.trim()) },
                 Modifier.fillMaxWidth(),
                 KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -99,14 +100,14 @@ fun SignUpScreen(onNavigateToLogIn: () -> Unit = {}, onNavigateToHome: () -> Uni
                 errorMessage = signUpFormState.value.passwordError
             )
             OutlinedFormTextField(
-                signUpFormState.value.repeatedPassword,
-                "Confirmar contraseña",
+                signUpFormState.value.confirmPassword,
+                stringResource(R.string.confirm_password_label),
                 { value -> viewModel.onRepeatedPasswordChange(value.trim()) },
                 Modifier.fillMaxWidth(),
                 KeyboardOptions(keyboardType = KeyboardType.Password),
                 PasswordVisualTransformation(),
-                isError = signUpFormState.value.repeatedPasswordError != null,
-                errorMessage = signUpFormState.value.repeatedPasswordError
+                isError = signUpFormState.value.confirmPasswordError != null,
+                errorMessage = signUpFormState.value.confirmPasswordError
             )
             Spacer(modifier = Modifier.height(9.dp))
             Button(
@@ -118,14 +119,14 @@ fun SignUpScreen(onNavigateToLogIn: () -> Unit = {}, onNavigateToHome: () -> Uni
                 shape = RoundedCornerShape(5.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Registrarse")
+                Text(stringResource(R.string.register_button_text))
             }
             TextButton(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 onClick = { onNavigateToLogIn() }
             ) {
                 Text(
-                    text = "¿Ya tienes una cuenta? Inicia sesión",
+                    text = stringResource(R.string.have_an_account_text),
                     color = Color.Gray
                 )
             }
@@ -133,19 +134,19 @@ fun SignUpScreen(onNavigateToLogIn: () -> Unit = {}, onNavigateToHome: () -> Uni
             SocialButton(
                 {},
                 R.drawable.apple,
-                "Continuar con Apple"
+                stringResource(R.string.login_with_apple)
             )
             Spacer(modifier = Modifier.height(8.dp))
             SocialButton(
                 {},
                 R.drawable.google,
-                "Continuar con Google"
+                stringResource(R.string.login_with_google)
             )
             Spacer(modifier = Modifier.height(8.dp))
             SocialButton(
                 {},
                 R.drawable.facebook,
-                "Continuar con Facebook"
+                stringResource(R.string.login_with_facebook)
             )
         }
     }
@@ -166,7 +167,7 @@ fun SignUpScreen(onNavigateToLogIn: () -> Unit = {}, onNavigateToHome: () -> Uni
         }
         is AuthState.Error -> {
             val errorMessage = (authState.value as AuthState.Error).message
-            Text("Error: $errorMessage", color = Color.Red)
+            Text(errorMessage, color = Color.Red)
         }
         else -> Unit
     }

@@ -46,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
@@ -98,7 +99,7 @@ fun HomeScreen(onNavigateToCalendar: (String) -> Unit, navController: NavHostCon
             )
         }
         is UiState.Error -> {
-            Text("Error al cargar.", textAlign = TextAlign.Center)
+            Text(stringResource(R.string.loading_error_text), textAlign = TextAlign.Center)
         }
     }
 }
@@ -125,7 +126,7 @@ fun HomeContent(
                 modifier = Modifier.padding(top = 32.dp, start = 16.dp, end = 16.dp)
             ) {
                 Text(
-                    "¡Hola!",
+                    stringResource(R.string.greeting_text),
                     fontSize = 15.sp,
                 )
                 Text(
@@ -143,7 +144,7 @@ fun HomeContent(
             FloatingActionButton(
                 onClick = { showDialog = true },
             ) {
-                Icon(Icons.Default.AddCircle, contentDescription = "Add calendar")
+                Icon(Icons.Default.AddCircle, contentDescription = stringResource(R.string.add_calendar_description))
             }
         }
     ) {
@@ -192,10 +193,12 @@ fun CalendarList(
     navController: NavHostController) {
     Column (modifier = modifier) {
         Row(
-            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
         ) {
             Text(
-                text = "Mis calendarios",
+                text = stringResource(R.string.calendar_list_title),
                 fontSize = 20.sp
             )
             Spacer(modifier = Modifier.size(10.dp))
@@ -214,7 +217,7 @@ fun CalendarList(
         if (calendarNum == 0) {
             Text(
                 modifier = Modifier.padding(top = 16.dp),
-                text = "No tienes ningún calendario aún.",
+                text = stringResource(R.string.no_calendars_text),
                 textAlign = TextAlign.Center)
         } else {
             LazyColumn(
@@ -282,12 +285,12 @@ fun ShowDialogSurface(viewModel: HomeViewModel, calendarFormState: CalendarFormS
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.Center
             ) {
-                Text("Nuevo calendario", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.new_calendar_title), fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedFormTextField(
                     calendarFormState.name,
-                    "Nombre",
+                    stringResource(R.string.name_label),
                     { value -> viewModel.onNameChange(value.trim()) },
                     Modifier.fillMaxWidth(),
                     KeyboardOptions(keyboardType = KeyboardType.Text),
@@ -296,7 +299,7 @@ fun ShowDialogSurface(viewModel: HomeViewModel, calendarFormState: CalendarFormS
                 )
                 OutlinedFormTextField(
                     calendarFormState.description,
-                    "Descripción",
+                    stringResource(R.string.description_label),
                     { value -> viewModel.onDescriptionChange(value.trim()) },
                     Modifier.fillMaxWidth(),
                     KeyboardOptions(keyboardType = KeyboardType.Text),
@@ -315,7 +318,7 @@ fun ShowDialogSurface(viewModel: HomeViewModel, calendarFormState: CalendarFormS
                             onDismiss()
                         }
                     ) {
-                        Text("Cerrar")
+                        Text(stringResource(R.string.dismiss_dialog_text))
                     }
                     TextButton(
                         modifier = Modifier.padding(8.dp),
@@ -329,7 +332,7 @@ fun ShowDialogSurface(viewModel: HomeViewModel, calendarFormState: CalendarFormS
                             }
                         }
                     ) {
-                        Text("Crear")
+                        Text(stringResource(R.string.confirm_dialog_text))
                     }
                 }
 

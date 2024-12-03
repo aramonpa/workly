@@ -64,6 +64,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -113,7 +114,7 @@ fun CalendarScreen(calendarId: String, navController: NavHostController, viewMod
             FloatingActionButton(
                 onClick = { showDialog = true },
             ) {
-                Icon(Icons.Default.AddCircle, contentDescription = "Add calendar")
+                Icon(Icons.Default.AddCircle, contentDescription = stringResource(R.string.add_calendar_description))
             }
         }
     ) {
@@ -143,7 +144,7 @@ fun CalendarScreen(calendarId: String, navController: NavHostController, viewMod
                                 }
                             ) {
                                 if (events.data.isNullOrEmpty()) {
-                                    Text("No hay eventos para este día.")
+                                    Text(stringResource(R.string.no_events_text))
                                 } else {
                                     EventContent(
                                         Modifier
@@ -180,7 +181,6 @@ fun CalendarScreen(calendarId: String, navController: NavHostController, viewMod
             }
             else -> Unit
         }
-
     }
 }
 
@@ -200,7 +200,7 @@ fun CalendarTopBar(id: String, viewModel: CalendarViewModel, navController: NavH
                 navController.popBackStack()
             }
         ) {
-            Image(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+            Image(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_text))
         }
         Spacer(modifier = Modifier.weight(1f))
         Box {
@@ -209,7 +209,7 @@ fun CalendarTopBar(id: String, viewModel: CalendarViewModel, navController: NavH
                     expanded = true
                 }
             ) {
-                Image(imageVector = Icons.Default.MoreVert, contentDescription = "Más")
+                Image(imageVector = Icons.Default.MoreVert, contentDescription = stringResource(R.string.more_text))
 
             }
             DropdownMenu(
@@ -217,14 +217,14 @@ fun CalendarTopBar(id: String, viewModel: CalendarViewModel, navController: NavH
                 onDismissRequest = { expanded = false }
             ) {
                 DropdownMenuItem(
-                    text = { Text("Ajustes") },
+                    text = { Text(stringResource(R.string.settings_title)) },
                     onClick = {
                         expanded = false
                         navController.navigate(Route.CalendarSettingsScreen.createRoute(id))
                     }
                 )
                 DropdownMenuItem(
-                    text = { Text("Eliminar") },
+                    text = { Text(stringResource(R.string.delete_text)) },
                     onClick = {
                         expanded = false
                         showAlertDialog.value = true
@@ -242,10 +242,10 @@ fun CalendarTopBar(id: String, viewModel: CalendarViewModel, navController: NavH
                         navController.popBackStack()
                     }
                 },
-                dialogTitle = "¿Está seguro?",
-                dialogText = "La operación de eliminar un calendario no se puede deshacer.",
+                dialogTitle = stringResource(R.string.asking_alert_text),
+                dialogText = stringResource(R.string.alert_dialog_calendar_description),
                 icon = Icons.Default.Info,
-                iconDescription = "Aviso"
+                iconDescription = stringResource(R.string.notice_text)
             )
         }
     }
@@ -382,12 +382,12 @@ fun EventForm(viewModel: CalendarViewModel, calendar: Calendar, onDismiss: () ->
         modifier = Modifier.padding(16.dp),
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Nuevo evento", fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.new_event_title), fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedFormTextField(
             eventFormState.value.title,
-            "Título",
+            stringResource(R.string.title_label),
             { viewModel.onTitleChange(it) },
             Modifier.fillMaxWidth(),
             KeyboardOptions(keyboardType = KeyboardType.Text),
@@ -397,7 +397,7 @@ fun EventForm(viewModel: CalendarViewModel, calendar: Calendar, onDismiss: () ->
 
         OutlinedFormTextField(
             eventFormState.value.description,
-            "Descripción",
+            stringResource(R.string.description_label),
             { viewModel.onDescriptionChange(it) },
             Modifier.fillMaxWidth(),
             KeyboardOptions(keyboardType = KeyboardType.Text),
@@ -410,8 +410,8 @@ fun EventForm(viewModel: CalendarViewModel, calendar: Calendar, onDismiss: () ->
         DateTimePicker(
             dateValue = eventFormState.value.startDate,
             timeValue = eventFormState.value.startTime,
-            dateLabel = "Fecha inicio",
-            timeLabel = "Hora inicio",
+            dateLabel = stringResource(R.string.start_date_label),
+            timeLabel = stringResource(R.string.start_time_label),
             isError = eventFormState.value.datesError != null,
             onDateSelected = { viewModel.onStartDateChange(it) },
             onTimeSelected = { viewModel.onStartTimeChange(it) }
@@ -420,8 +420,8 @@ fun EventForm(viewModel: CalendarViewModel, calendar: Calendar, onDismiss: () ->
         DateTimePicker(
             dateValue = eventFormState.value.endDate,
             timeValue = eventFormState.value.endTime,
-            dateLabel = "Fecha fin",
-            timeLabel = "Hora fin",
+            dateLabel = stringResource(R.string.end_date_label),
+            timeLabel = stringResource(R.string.end_time_label),
             isError = eventFormState.value.datesError != null,
             onDateSelected = { viewModel.onEndDateChange(it) },
             onTimeSelected = { viewModel.onEndTimeChange(it) }
@@ -436,7 +436,7 @@ fun EventForm(viewModel: CalendarViewModel, calendar: Calendar, onDismiss: () ->
 
         OutlinedFormTextField(
             eventFormState.value.location ?: "",
-            "Localización",
+            stringResource(R.string.location_label),
             { viewModel.onLocationChange(it) },
             Modifier.fillMaxWidth(),
             KeyboardOptions(keyboardType = KeyboardType.Text),
@@ -459,7 +459,7 @@ fun EventForm(viewModel: CalendarViewModel, calendar: Calendar, onDismiss: () ->
                 modifier = Modifier.padding(8.dp),
                 onClick = onDismiss
             ) {
-                Text("Cerrar")
+                Text(stringResource(R.string.dismiss_dialog_text))
             }
             TextButton(
                 modifier = Modifier.padding(8.dp),
@@ -472,7 +472,7 @@ fun EventForm(viewModel: CalendarViewModel, calendar: Calendar, onDismiss: () ->
                     }
                 }
             ) {
-                Text("Crear")
+                Text(stringResource(R.string.confirm_dialog_text))
             }
         }
     }
@@ -491,7 +491,7 @@ fun DropDownMenu(teams: List<String>, isError: Boolean, onItemSelected: (String)
         OutlinedTextField(
             value = selectedText,
             onValueChange = { selectedText = it },
-            label = { Text(text = "Asignado") },
+            label = { Text(text = stringResource(R.string.assignee_label)) },
             singleLine = true,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             isError = isError,
@@ -530,10 +530,12 @@ fun DropDownMenu(teams: List<String>, isError: Boolean, onItemSelected: (String)
 fun EventContent(modifier: Modifier, eventList: List<Event>, onEventClicked: (String) -> Unit) {
     Column (modifier = modifier) {
         Row(
-            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
         ) {
             Text(
-                text = "Eventos",
+                text = stringResource(R.string.events_title),
                 fontSize = 20.sp
             )
             Spacer(modifier = Modifier.size(10.dp))
@@ -552,7 +554,7 @@ fun EventContent(modifier: Modifier, eventList: List<Event>, onEventClicked: (St
         if (eventList.isEmpty()) {
             Text(
                 modifier = Modifier.padding(top = 16.dp),
-                text = "No tienes ningún calendario aún.",
+                text = stringResource(R.string.no_events_text),
                 textAlign = TextAlign.Center)
         } else {
             LazyColumn(

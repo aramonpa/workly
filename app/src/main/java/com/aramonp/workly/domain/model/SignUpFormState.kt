@@ -11,6 +11,6 @@ data class SignUpFormState(
     val usernameError: String? = null,
     val password: String = "",
     val passwordError: String? = null,
-    val repeatedPassword: String = "",
-    val repeatedPasswordError: String? = null,
+    val confirmPassword: String = "",
+    val confirmPasswordError: String? = null,
 )
