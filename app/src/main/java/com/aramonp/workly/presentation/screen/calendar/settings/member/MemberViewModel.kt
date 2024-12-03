@@ -1,17 +1,12 @@
 package com.aramonp.workly.presentation.screen.calendar.settings.member
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.aramonp.workly.data.repository.FirestoreRepositoryImpl
-import com.aramonp.workly.domain.model.Calendar
 import com.aramonp.workly.domain.model.UiState
-import com.aramonp.workly.domain.use_case.ValidateEmail
-import com.aramonp.workly.domain.use_case.ValidateField
 import com.aramonp.workly.domain.use_case.ValidateUser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel

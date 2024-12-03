@@ -1,7 +1,6 @@
 package com.aramonp.workly.presentation.screen.login
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.aramonp.workly.data.repository.AuthRepositoryImpl
 import com.aramonp.workly.domain.model.AuthState
 import com.aramonp.workly.domain.model.LogInFormState
@@ -10,7 +9,6 @@ import com.aramonp.workly.domain.use_case.ValidatePassword
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
