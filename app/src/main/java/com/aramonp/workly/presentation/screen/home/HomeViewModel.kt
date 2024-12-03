@@ -36,14 +36,7 @@ class HomeViewModel @Inject constructor(
     private val _validationState = MutableStateFlow(false)
     val validationState: StateFlow<Boolean> = _validationState
 
-    init {
-        viewModelScope.launch {
-            fetchUser()
-            fetchUserCalendars()
-        }
-    }
-
-    private suspend fun fetchUser() {
+    suspend fun fetchUser() {
         _userState.value = UiState.Loading
             val authResult = authRepository.getCurrentUser()
             authResult

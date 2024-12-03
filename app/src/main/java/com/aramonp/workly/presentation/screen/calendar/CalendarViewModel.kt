@@ -4,22 +4,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.aramonp.workly.data.repository.FirestoreRepositoryImpl
 import com.aramonp.workly.domain.model.Calendar
+import com.aramonp.workly.domain.model.CalendarEventFormState
+import com.aramonp.workly.domain.model.CalendarFormState
 import com.aramonp.workly.domain.model.Event
+import com.aramonp.workly.domain.model.EventFormState
 import com.aramonp.workly.domain.model.UiState
+import com.aramonp.workly.domain.model.ValidationResult
+import com.aramonp.workly.domain.use_case.ValidateDatesFields
 import com.aramonp.workly.domain.use_case.ValidateDates
 import com.aramonp.workly.domain.use_case.ValidateField
-import com.aramonp.workly.domain.use_case.ValidatePassword
+import com.aramonp.workly.util.combineDateAndTime
 import com.aramonp.workly.util.convertToTimestamp
 import com.google.firebase.Timestamp
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -40,26 +42,13 @@ class CalendarViewModel @Inject constructor(
     private val _eventsState = MutableStateFlow<UiState<List<Event>?>>(UiState.Loading)
     val eventsState: StateFlow<UiState<List<Event>?>> = _eventsState
 
-    /*
-    private val _validationErrors = MutableStateFlow<Map<String, String>>(emptyMap())
-    val validationErrors: StateFlow<Map<String, String>> = _validationErrors
-    val nameResult = validateEventName(name)
-        if (!nameResult.successful) {
-            errors["name"] = nameResult.errorMessage.orEmpty()
-        }
-     */
+    private val _eventFormState = MutableStateFlow(CalendarEventFormState())
+    val eventFormState: StateFlow<CalendarEventFormState> = _eventFormState
 
-    private val _titleError = MutableStateFlow<String?>(null)
-    val titleError: StateFlow<String?> = _titleError
-    private val _descriptionError = MutableStateFlow<String?>(null)
-    val descriptionError: StateFlow<String?> = _descriptionError
-    private val _datesError = MutableStateFlow<String?>(null)
-    val datesError: StateFlow<String?> = _datesError
-    private val _assigneeError = MutableStateFlow<String?>(null)
-    val assigneeError: StateFlow<String?> = _assigneeError
+    private val _validationState = MutableStateFlow(false)
+    val validationState: StateFlow<Boolean> = _validationState
 
     private val _calendarId = MutableStateFlow("")
-
     private val monthFormatter = DateTimeFormatter.ofPattern("MMMM", Locale("es", "ES"))
 
     fun getDaysInMonth(): List<LocalDate> {
@@ -69,33 +58,30 @@ class CalendarViewModel @Inject constructor(
 
         val firstDayOfWeek = firstDayOfMonth.dayOfWeek.value
 
-        // Calcular cuántos días vacíos necesitamos antes del primer día del mes para que la semana comience en lunes
+        // Calculate ending days of the month before
         val daysBeforeFirstDay = if (firstDayOfWeek == 1) 0 else firstDayOfWeek - 1
 
-        // Llenar los días vacíos hasta el primer día de la semana
+        // Getting last days of the month before
         var day = firstDayOfMonth.minusDays(daysBeforeFirstDay.toLong())
         while (day.isBefore(firstDayOfMonth)) {
             daysInMonth.add(day)
             day = day.plusDays(1)
         }
 
-        // Llenar los días del mes
         for (i in 0 until lastDayOfMonth.dayOfMonth) {
             daysInMonth.add(day)
             day = day.plusDays(1)
         }
 
-        // Calcular los días restantes del siguiente mes para completar la cuadrícula
+        // Getting
         val totalDaysInMonth = daysInMonth.size
-        val totalWeeks = (totalDaysInMonth + 6) / 7 // Número de filas completas de la cuadrícula
+        val totalWeeks = (totalDaysInMonth + 6) / 7
 
         // Si el mes no llena 6 filas, agregamos los días del siguiente mes para completar la cuadrícula
         if (totalDaysInMonth % 7 != 0) {
-            // Calcular el primer día del siguiente mes
             val nextMonthFirstDay = currentMonth.plusMonths(1).atDay(1)
             var nextMonthDay = nextMonthFirstDay
 
-            // Llenar los días faltantes con días del siguiente mes
             while (daysInMonth.size < totalWeeks * 7) {
                 daysInMonth.add(nextMonthDay)
                 nextMonthDay = nextMonthDay.plusDays(1)
@@ -122,7 +108,6 @@ class CalendarViewModel @Inject constructor(
         _calendarId.value = calendarId
         getCalendarInfo(calendarId)
             .onSuccess { calendar ->
-
                 _calendarState.value = UiState.Success(calendar!!)
             }
             .onFailure { error ->
@@ -160,57 +145,106 @@ class CalendarViewModel @Inject constructor(
         return firestoreRepository.getAllEventsByDay(calendarId, date)
     }
 
-    suspend fun addEvent(
-        name: String,
-        description: String,
-        location: String,
-        startDate: LocalDateTime,
-        endDate: LocalDateTime,
-        assignee: String
-    ) {
-        val event = Event(
-            title = name,
-            description = description,
-            startDate = convertToTimestamp(startDate),
-            endDate = convertToTimestamp(endDate),
-            createdAt = Timestamp.now(),
-            location = location,
-            assignee = assignee
-        )
-
-        if (!validateFields(event)) {
+    suspend fun addEvent() {
+        if (validateFields()) {
+            _validationState.value = true
+        } else {
+            _validationState.value = false
             return
         }
 
         firestoreRepository.addEvent(
             _calendarId.value,
-            event
+            Event(
+                title = _eventFormState.value.title,
+                description = _eventFormState.value.description,
+                startDateTime = convertToTimestamp(combineDateAndTime(
+                    _eventFormState.value.startDate,
+                    _eventFormState.value.startTime
+                )),
+                endDateTime = convertToTimestamp(combineDateAndTime(
+                    _eventFormState.value.startDate,
+                    _eventFormState.value.startTime
+                )),
+                createdAt = Timestamp.now(),
+                location = _eventFormState.value.location,
+                assignee = _eventFormState.value.assignee
+            )
         )
-
-        //val currentEvents = (_eventsState.value as? UiState.Success)?.data.orEmpty()
-        //_eventsState.value = UiState.Success(currentEvents + event)
         fetchEvents()
     }
 
-    suspend fun deleteCalendar() {
-        viewModelScope.launch {
-            firestoreRepository.deleteCalendar(_calendarId.value)
-        }
+    fun onTitleChange(title: String) {
+        _eventFormState.value = _eventFormState.value.copy(title = title)
     }
 
-    private fun validateFields(event: Event): Boolean {
-        val titleValidation = validateField(event.title)
-        val descriptionValidation = validateField(event.description)
-        val datesValidation = validateDates(event.startDate, event.endDate)
-        val assigneeValidation = validateField(event.assignee)
+    fun onDescriptionChange(description: String) {
+        _eventFormState.value = _eventFormState.value.copy(description = description)
+    }
 
-        _titleError.value = titleValidation.errorMessage
-        _descriptionError.value = descriptionValidation.errorMessage
-        _datesError.value = datesValidation.errorMessage
-        _assigneeError.value = assigneeValidation.errorMessage
+    fun onStartDateChange(startDate: String) {
+        _eventFormState.value = _eventFormState.value.copy(startDate = startDate)
+    }
 
-        // Si hay errores, no continuar
+    fun onStartTimeChange(startTime: String) {
+        _eventFormState.value = _eventFormState.value.copy(startTime = startTime)
+    }
+
+    fun onEndDateChange(endDate: String) {
+        _eventFormState.value = _eventFormState.value.copy(endDate = endDate)
+    }
+
+    fun onEndTimeChange(endTime: String) {
+        _eventFormState.value = _eventFormState.value.copy(endTime = endTime)
+    }
+
+    fun onLocationChange(location: String) {
+        _eventFormState.value = _eventFormState.value.copy(location = location)
+    }
+
+    fun onAssigneeChange(assignee: String) {
+        _eventFormState.value = _eventFormState.value.copy(assignee = assignee)
+    }
+
+    suspend fun deleteCalendar() {
+        firestoreRepository.deleteCalendar(_calendarId.value)
+    }
+
+    private fun validateFields(): Boolean {
+        val titleValidation = validateField(_eventFormState.value.title)
+        val descriptionValidation = validateField(_eventFormState.value.description)
+        val assigneeValidation = validateField(_eventFormState.value.assignee)
+        val datesFieldsValidation = ValidateDatesFields().invoke(
+            _eventFormState.value.startDate,
+            _eventFormState.value.startTime,
+            _eventFormState.value.endDate,
+            _eventFormState.value.endTime
+        )
+
+        val datesValidation = if (datesFieldsValidation.success) {
+            val startDateTime = convertToTimestamp(
+                combineDateAndTime(_eventFormState.value.startDate, _eventFormState.value.startTime)
+            )
+            val endDateTime = convertToTimestamp(
+                combineDateAndTime(_eventFormState.value.endDate, _eventFormState.value.endTime)
+            )
+            validateDates(startDateTime, endDateTime)
+        } else {
+            datesFieldsValidation
+        }
+
+        _eventFormState.value = _eventFormState.value.copy(
+            titleError = titleValidation.errorMessage,
+            descriptionError = descriptionValidation.errorMessage,
+            datesError = datesValidation.errorMessage,
+            assigneeError = assigneeValidation.errorMessage
+        )
+
         return titleValidation.success && descriptionValidation.success && datesValidation.success &&
                 assigneeValidation.success
+    }
+
+    fun clearFields() {
+        _eventFormState.value = CalendarEventFormState()
     }
 }

@@ -1,5 +1,6 @@
 package com.aramonp.workly.presentation.screen.signup
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.aramonp.workly.data.repository.AuthRepositoryImpl
 import com.aramonp.workly.data.repository.FirestoreRepositoryImpl

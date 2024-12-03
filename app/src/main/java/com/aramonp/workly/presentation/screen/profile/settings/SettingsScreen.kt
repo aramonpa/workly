@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewModel = hiltViewModel()) {
     val settingsState = viewModel.settingsState.collectAsState()
     val settingsFormState = viewModel.settingsFormState.collectAsState()
+    val validationState = viewModel.validationState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
@@ -59,7 +60,11 @@ fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewMode
                         "Nombre",
                         state.data.name,
                         isError = settingsFormState.value.nameError != null,
-                        errorMessage = settingsFormState.value.nameError
+                        errorMessage = settingsFormState.value.nameError,
+                        validationState = validationState,
+                        onDismiss = {
+                            viewModel.clearErrors()
+                        }
                     ) { value ->
                         coroutineScope.launch {
                             viewModel.onNameChange(value)
@@ -71,7 +76,11 @@ fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewMode
                         "Apellidos",
                         state.data.surname,
                         isError = settingsFormState.value.surnameError != null,
-                        errorMessage = settingsFormState.value.surnameError
+                        errorMessage = settingsFormState.value.surnameError,
+                        validationState = validationState,
+                        onDismiss = {
+                            viewModel.clearErrors()
+                        }
                     ) { value ->
                         coroutineScope.launch {
                             viewModel.onSurnameChange(value)
@@ -83,7 +92,11 @@ fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewMode
                         "Nombre de usuario",
                         state.data.username,
                         isError = settingsFormState.value.usernameError != null,
-                        errorMessage = settingsFormState.value.usernameError
+                        errorMessage = settingsFormState.value.usernameError,
+                        validationState = validationState,
+                        onDismiss = {
+                            viewModel.clearErrors()
+                        }
                     ) { value ->
                         coroutineScope.launch {
                             viewModel.onUsernameChange(value)

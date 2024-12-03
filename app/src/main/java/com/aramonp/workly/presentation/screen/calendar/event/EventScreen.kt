@@ -35,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,11 +57,10 @@ import kotlinx.coroutines.launch
 fun EventScreen(calendarId: String, eventId: String, navController: NavHostController, viewModel: EventViewModel = hiltViewModel()) {
     val settingsState = viewModel.eventState.collectAsState()
     val teams = viewModel.teams.collectAsState()
-    val titleError: String? by viewModel.titleError.collectAsState()
-    val descriptionError: String? by viewModel.descriptionError.collectAsState()
-    val datesError: String? by viewModel.datesError.collectAsState()
-    val assigneeError: String? by viewModel.assigneeError.collectAsState()
+    val eventFormState = viewModel.eventFormState.collectAsState()
+    val validationState = viewModel.validationState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
+
 
     LaunchedEffect(calendarId, eventId) {
         if (calendarId.isNotEmpty() && eventId.isNotEmpty()) {
@@ -89,8 +89,12 @@ fun EventScreen(calendarId: String, eventId: String, navController: NavHostContr
                         LabeledField(
                             "Título",
                             state.data.title,
-                            isError = titleError != null,
-                            errorMessage = titleError
+                            isError = eventFormState.value.titleError != null,
+                            errorMessage = eventFormState.value.titleError,
+                            validationState = validationState,
+                            onDismiss = {
+
+                            }
                         ) { value ->
                             coroutineScope.launch {
                                 viewModel.onTitleChange(value)
@@ -105,8 +109,12 @@ fun EventScreen(calendarId: String, eventId: String, navController: NavHostContr
                         LabeledField(
                             "Descripción",
                             state.data.description,
-                            isError = descriptionError != null,
-                            errorMessage = descriptionError
+                            isError = eventFormState.value.descriptionError != null,
+                            errorMessage = eventFormState.value.descriptionError,
+                            validationState = validationState,
+                            onDismiss = {
+
+                            }
                         ) { value ->
                             coroutineScope.launch {
                                 viewModel.onDescriptionChange(value)
@@ -122,10 +130,11 @@ fun EventScreen(calendarId: String, eventId: String, navController: NavHostContr
                             label = "Fecha inicio",
                             dateLabel = "Fecha inicio",
                             timeLabel = "Hora inicio",
-                            value = state.data.startDate,
+                            value = state.data.startDateTime,
+                            isError = eventFormState.value.datesError != null,
                             onConfirmation = { value ->
                                 coroutineScope.launch {
-                                    viewModel.onStartDateChange(value)
+                                    viewModel.onStartDateTimeChange(value)
                                     viewModel.updateEventInfo()
                                 }
                             }
@@ -139,16 +148,17 @@ fun EventScreen(calendarId: String, eventId: String, navController: NavHostContr
                             label = "Fecha fin",
                             dateLabel = "Fecha fin",
                             timeLabel = "Hora fin",
-                            value = state.data.endDate,
+                            value = state.data.endDateTime,
+                            isError = eventFormState.value.datesError != null,
                             onConfirmation = { value ->
                                 coroutineScope.launch {
-                                    viewModel.onEndDateChange(value)
+                                    viewModel.onEndDateTimeChange(value)
                                     viewModel.updateEventInfo()
                                 }
                             }
                         )
-                        if (datesError != null) {
-                            Text(datesError!!, color = Color.Red, fontSize = 12.sp)
+                        if (eventFormState.value.datesError != null) {
+                            Text(eventFormState.value.datesError!!, color = Color.Red, fontSize = 12.sp)
                         }
                     }
                     item {
@@ -157,9 +167,13 @@ fun EventScreen(calendarId: String, eventId: String, navController: NavHostContr
                     item {
                         LabeledField(
                             "Localización",
-                            state.data.location,
-                            isError = titleError != null,
-                            errorMessage = titleError
+                            state.data.location ?: "",
+                            isError = false,
+                            errorMessage = null,
+                            validationState = validationState,
+                            onDismiss = {
+
+                            }
                         ) { value ->
                             coroutineScope.launch {
                                 viewModel.onLocationChange(value)
@@ -175,7 +189,7 @@ fun EventScreen(calendarId: String, eventId: String, navController: NavHostContr
                             label = "Asignado",
                             value = state.data.assignee,
                             teams = teams.value,
-                            errorMessage = assigneeError,
+                            errorMessage = eventFormState.value.assigneeError,
                             onConfirmation = { value ->
                                 coroutineScope.launch {
                                     viewModel.onAssigneeChange(value)

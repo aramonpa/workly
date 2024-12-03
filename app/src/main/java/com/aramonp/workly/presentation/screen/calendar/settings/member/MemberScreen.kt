@@ -175,7 +175,9 @@ fun DetailedItem(index: Int, member: String, onDelete: (String) -> Unit) {
         Text(member)
         Spacer(modifier = Modifier.weight(1f))
 
-        if(index != 0) {
+        if (index == 0) {
+           Text("(propietario)")
+        } else {
             IconButton (
                 onClick = { showAlertDialog.value = true }
             ) {

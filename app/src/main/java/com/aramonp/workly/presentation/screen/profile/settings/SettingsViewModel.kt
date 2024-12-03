@@ -28,6 +28,9 @@ class SettingsViewModel @Inject constructor(
     private val _settingsFormState = MutableStateFlow(SettingsFormState())
     val settingsFormState: StateFlow<SettingsFormState> = _settingsFormState
 
+    private val _validationState = MutableStateFlow(false)
+    val validationState: StateFlow<Boolean> = _validationState
+
     private val _uid = MutableStateFlow("")
 
     init {
@@ -50,7 +53,8 @@ class SettingsViewModel @Inject constructor(
             _uid.value = uid
             getUserInfo(uid)
                 .onSuccess { user ->
-                    _settingsState.value = UiState.Success(user!!)
+                    fillFormState(user!!)
+                    _settingsState.value = UiState.Success(user)
                 }
                 .onFailure { error ->
                     UiState.Error(error.message.orEmpty())
@@ -63,21 +67,31 @@ class SettingsViewModel @Inject constructor(
     }
 
     suspend fun updateUserInfo() {
-        val state = (settingsState.value as UiState.Success<User>)
-
-        if (!validateFields(state.data)) {
+        if (validateFields()) {
+            _validationState.value = true
+        } else {
+            _validationState.value = false
             return
         }
 
         firestoreRepository.updateUser(
             _uid.value,
             mapOf(
-                "name" to state.data.name,
-                "surname" to state.data.surname,
-                "username" to state.data.username,
+                "name" to _settingsFormState.value.name,
+                "surname" to _settingsFormState.value.surname,
+                "username" to _settingsFormState.value.username,
                 "updatedAt" to Timestamp.now()
             )
         )
+        onUserFieldChange { calendar -> calendar.copy(name = _settingsFormState.value.name) }
+        onUserFieldChange { calendar -> calendar.copy(surname = _settingsFormState.value.surname) }
+        onUserFieldChange { calendar -> calendar.copy(username = _settingsFormState.value.username) }
+    }
+
+    private fun fillFormState(user: User) {
+        _settingsFormState.value = _settingsFormState.value.copy(name = user.name)
+        _settingsFormState.value = _settingsFormState.value.copy(surname = user.surname)
+        _settingsFormState.value = _settingsFormState.value.copy(username = user.username)
     }
 
     private fun onUserFieldChange(fieldUpdater: (User) -> User) {
@@ -93,21 +107,21 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun onNameChange(name: String) {
-        onUserFieldChange { user -> user.copy(name = name) }
+        _settingsFormState.value = _settingsFormState.value.copy(name = name)
     }
 
     fun onSurnameChange(surname: String) {
-        onUserFieldChange { user -> user.copy(surname = surname) }
+        _settingsFormState.value = _settingsFormState.value.copy(surname = surname)
     }
 
     fun onUsernameChange(username: String) {
-        onUserFieldChange { user -> user.copy(username = username) }
+        _settingsFormState.value = _settingsFormState.value.copy(username = username)
     }
 
-    private fun validateFields(user: User): Boolean {
-        val nameValidation = validateField(user.name)
-        val surnameValidation = validateField(user.surname)
-        val usernameValidation = validateField(user.username)
+    private fun validateFields(): Boolean {
+        val nameValidation = validateField(_settingsFormState.value.name)
+        val surnameValidation = validateField(_settingsFormState.value.surname)
+        val usernameValidation = validateField(_settingsFormState.value.username)
 
         _settingsFormState.value = _settingsFormState.value.copy(
             nameError = nameValidation.errorMessage,
@@ -115,6 +129,14 @@ class SettingsViewModel @Inject constructor(
             usernameError = usernameValidation.errorMessage
         )
 
-        return nameValidation.success && surnameValidation.success
+        return nameValidation.success && surnameValidation.success && usernameValidation.success
+    }
+
+    fun clearErrors() {
+        _settingsFormState.value = _settingsFormState.value.copy(
+            nameError = null,
+            surnameError = null,
+            usernameError = null
+        )
     }
 }

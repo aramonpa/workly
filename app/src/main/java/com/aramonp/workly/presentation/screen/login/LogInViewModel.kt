@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aramonp.workly.data.repository.AuthRepositoryImpl
 import com.aramonp.workly.domain.model.AuthState
+import com.aramonp.workly.domain.model.LogInFormState
 import com.aramonp.workly.domain.use_case.ValidateEmail
 import com.aramonp.workly.domain.use_case.ValidatePassword
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,38 +23,18 @@ class LogInViewModel @Inject constructor(
     private val _authState = MutableStateFlow<AuthState>(AuthState.Unauthenticated)
     val authState: StateFlow<AuthState> = _authState
 
-    private val _email = MutableStateFlow("")
-    val email: StateFlow<String> = _email
-
-    private val _password = MutableStateFlow("")
-    val password: StateFlow<String> = _password
-
-    private val _emailError = MutableStateFlow<String?>(null)
-    val emailError: StateFlow<String?> = _emailError
-
-    private val _passwordError = MutableStateFlow<String?>(null)
-    val passwordError: StateFlow<String?> = _passwordError
+    private val _logInFormState = MutableStateFlow(LogInFormState())
+    val logInFormState: StateFlow<LogInFormState> = _logInFormState
 
     suspend fun logIn() {
         _authState.emit(AuthState.Loading)
 
-        val emailValidation = validateEmail(_email.value)
-        val passwordValidation = validatePassword(_password.value)
-
-        if (!emailValidation.success) {
-            _emailError.value = emailValidation.errorMessage
-        }
-
-        if (!passwordValidation.success) {
-            _passwordError.value = passwordValidation.errorMessage
-        }
-
-        if (!emailValidation.success || !passwordValidation.success) {
+        if (!validateFields()) {
             _authState.emit(AuthState.Unauthenticated)
             return
         }
 
-        authRepository.signIn(_email.value, _password.value)
+        authRepository.signIn(_logInFormState.value.email, _logInFormState.value.password)
             .onSuccess {
                 _authState.emit(AuthState.Success(it))
             }
@@ -63,12 +44,22 @@ class LogInViewModel @Inject constructor(
     }
 
     fun onEmailChange(email: String) {
-        _email.value = email
-        _emailError.value = null
+        _logInFormState.value = _logInFormState.value.copy(email = email)
     }
 
     fun onPasswordChange(password: String) {
-        _password.value = password
-        _passwordError.value = null
+        _logInFormState.value = _logInFormState.value.copy(password = password)
+    }
+
+    private fun validateFields(): Boolean {
+        val emailValidation = validateEmail(_logInFormState.value.email)
+        val passwordValidation = validatePassword(_logInFormState.value.password)
+
+        _logInFormState.value = _logInFormState.value.copy(
+            emailError = emailValidation.errorMessage,
+            passwordError = passwordValidation.errorMessage
+        )
+
+        return emailValidation.success && passwordValidation.success
     }
 }

@@ -21,12 +21,14 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.aramonp.workly.util.convertMillisToDate
+import com.google.firebase.Timestamp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DatePickerField(
     value: String,
     label: String,
+    isError: Boolean,
     onDateSelected: (String) -> Unit
 ) {
     val datePickerState = rememberDatePickerState()
@@ -37,6 +39,7 @@ fun DatePickerField(
         value = value,
         onValueChange = {},
         label = { Text(label) },
+        isError = isError,
         modifier = Modifier
             .width(150.dp)
             .pointerInput(value) {

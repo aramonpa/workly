@@ -4,7 +4,9 @@ import androidx.compose.runtime.LaunchedEffect
 import com.aramonp.workly.domain.model.Calendar
 import com.aramonp.workly.presentation.screen.profile.settings.CalendarSettingsViewModel
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -32,6 +34,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,10 +61,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun CalendarSettingsScreen(id: String, navController: NavHostController, viewModel: CalendarSettingsViewModel = hiltViewModel()) {
     val coroutineScope = rememberCoroutineScope()
-    var showDialog by remember { mutableStateOf(false) }
-    val nameError by viewModel.nameError.collectAsState()
-    val descriptionError by viewModel.descriptionError.collectAsState()
-    val teamError by viewModel.teamError.collectAsState()
+    val calendarSettingsFormState by viewModel.calendarSettingsFormState.collectAsState()
+    val validationState = viewModel.validationState.collectAsState()
 
     LaunchedEffect(id) {
         if (id.isNotEmpty()) {
@@ -101,8 +102,12 @@ fun CalendarSettingsScreen(id: String, navController: NavHostController, viewMod
                     LabeledField(
                         "Nombre",
                         state.data.name,
-                        isError = nameError != null,
-                        errorMessage = nameError
+                        isError = calendarSettingsFormState.nameError != null,
+                        errorMessage = calendarSettingsFormState.nameError,
+                        validationState = validationState,
+                        onDismiss = {
+
+                        }
                     ) { value ->
                         coroutineScope.launch {
                             viewModel.onNameChange(value)
@@ -113,8 +118,12 @@ fun CalendarSettingsScreen(id: String, navController: NavHostController, viewMod
                     LabeledField(
                         "Descripción",
                         state.data.description,
-                        isError = descriptionError != null,
-                        errorMessage = descriptionError
+                        isError = calendarSettingsFormState.descriptionError != null,
+                        errorMessage = calendarSettingsFormState.descriptionError,
+                        validationState = validationState,
+                        onDismiss = {
+
+                        }
                     ) { value ->
                         coroutineScope.launch {
                             viewModel.onDescriptionChange(value)
@@ -130,28 +139,19 @@ fun CalendarSettingsScreen(id: String, navController: NavHostController, viewMod
                     DetailedList(
                         title = "Equipos de trabajo",
                         items = state.data.teams,
-                        onDelete = { value ->
+                        validationState = validationState,
+                        onDelete = {
                             coroutineScope.launch {
-                                viewModel.deleteTeam(value)
+                                viewModel.deleteTeam(it)
                             }
                         },
-                        onConfirmation = { value ->
+                        onConfirmation = {
                             coroutineScope.launch {
-                                viewModel.addTeam(value)
-                                showDialog = false
-                                //viewModel.updateCalendarInfo()
+                                viewModel.addTeam(it)
                             }
                         },
-                        errorMessage = teamError
+                        errorMessage = calendarSettingsFormState.teamError
                     )
-
-                    if (showDialog) {
-                        ShowDialogSurface(
-                            viewModel,
-                            onDismiss = { showDialog = false },
-                            errorMessage = teamError
-                        )
-                    }
                 }
             }
             is UiState.Error -> {
@@ -166,6 +166,7 @@ fun CalendarSettingsScreen(id: String, navController: NavHostController, viewMod
 fun DetailedList(
     title: String,
     items: List<String>,
+    validationState: State<Boolean>,
     onDelete: (String) -> Unit,
     onConfirmation: (String) -> Unit,
     errorMessage: String?
@@ -199,7 +200,12 @@ fun DetailedList(
     if (showAlertDialog.value) {
         OutlinedTextFieldDialog(
             onDismissRequest = { showAlertDialog.value = false },
-            onConfirmation = { onConfirmation(it) },
+            onConfirmation = {
+                if (validationState.value) {
+                    showAlertDialog.value = false
+                }
+                onConfirmation(it)
+            },
             dialogTitle = "Nuevo equipo de trabajo",
             dialogText = "",
             isError = errorMessage != null,
@@ -236,76 +242,26 @@ fun DetailedItem(team: String, onDelete: (String) -> Unit) {
 }
 
 @Composable
-fun ShowDialogSurface(viewModel: CalendarSettingsViewModel, onDismiss: () -> Unit = {}, errorMessage: String?) {
-    val coroutineScope = rememberCoroutineScope()
-    val name = remember { mutableStateOf("") }
-
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = MaterialTheme.shapes.large,
-            tonalElevation = 3.dp
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text("Nuevo equipo", fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedFormTextField(
-                    name.value,
-                    "Nombre",
-                    { name.value = it },
-                    Modifier.fillMaxWidth(),
-                    KeyboardOptions(keyboardType = KeyboardType.Text),
-                    isError = errorMessage != null,
-                    errorMessage = errorMessage
-                )
-                Row(
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                ) {
-                    TextButton(
-                        modifier = Modifier.padding(8.dp),
-                        onClick = onDismiss
-                    ) {
-                        Text("Cerrar")
-                    }
-                    TextButton(
-                        modifier = Modifier.padding(8.dp),
-                        onClick = {
-                            coroutineScope.launch {
-                                viewModel.addTeam(name.value)
-                                name.value = ""
-                                onDismiss()
-                            }
-                        }
-                    ) {
-                        Text("Crear")
-                    }
-                }
-
-            }
-        }
-    }
-}
-
-@Composable
 fun MemberField(label: String, title: String, onClick: () -> Unit) {
     Column {
         Text(text = label, fontWeight = FontWeight.Bold)
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier.clickable { onClick() }
         ) {
-            Text(
-                text = title,
-                modifier = Modifier.weight(1f)
-            )
-            IconButton(onClick = onClick) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "Ir"
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    modifier = Modifier.weight(1f)
                 )
+                IconButton(onClick = onClick) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = "Ir"
+                    )
+                }
             }
         }
     }

@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Workly</string>
+    <string name="unknown_error">Ocurrió un error inexperado</string>
 </resources>

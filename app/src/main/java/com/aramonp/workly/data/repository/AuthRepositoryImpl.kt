@@ -1,5 +1,7 @@
 package com.aramonp.workly.data.repository
 
+import android.util.Log
+import com.aramonp.workly.R
 import com.aramonp.workly.domain.repository.AuthRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -7,7 +9,8 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 class AuthRepositoryImpl @Inject constructor(
-    private val firebaseAuth: FirebaseAuth
+    private val firebaseAuth: FirebaseAuth,
+    private val resourceProvider: ResourceProviderImpl
 ) : AuthRepository {
     /*
     TODO: Change Result for DataState and Flow
@@ -18,7 +21,8 @@ class AuthRepositoryImpl @Inject constructor(
             val result = firebaseAuth.signInWithEmailAndPassword(email, password).await()
             Result.success(result.user)
         } catch (e: Exception) {
-            Result.failure(Exception("Ha habido un error al intentar iniciar sesión."))
+            Log.e("FirestoreRepository", e.message ?: resourceProvider.getString(R.string.unknown_error))
+            Result.failure(e)
         }
     }
 
@@ -27,7 +31,8 @@ class AuthRepositoryImpl @Inject constructor(
             val result = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
             Result.success(result.user)
         } catch (e: Exception) {
-            Result.failure(Exception("Ha habido un error al intentar crear el usuario."))
+            Log.e("FirestoreRepository", e.message ?: resourceProvider.getString(R.string.unknown_error))
+            Result.failure(e)
         }
     }
 
@@ -40,7 +45,7 @@ class AuthRepositoryImpl @Inject constructor(
         return if (currentUser != null) {
             Result.success(currentUser)
         } else {
-            Result.failure(Exception("No hay usuario autenticado"))
+            Result.failure(Exception("No existe un usuario autenticado"))
         }
     }
 }

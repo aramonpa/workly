@@ -46,10 +46,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun LogInScreen(onNavigateToSignUp: () -> Unit, onNavigateToHome: () -> Unit, viewModel: LogInViewModel = hiltViewModel()) {
     val authState = viewModel.authState.collectAsState()
-    val email: String by viewModel.email.collectAsState()
-    val emailError: String? by viewModel.emailError.collectAsState()
-    val password: String by viewModel.password.collectAsState()
-    val passwordError: String? by viewModel.passwordError.collectAsState()
+    val logInFormState = viewModel.logInFormState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
     Scaffold(modifier = Modifier.fillMaxSize()) {
@@ -75,24 +72,24 @@ fun LogInScreen(onNavigateToSignUp: () -> Unit, onNavigateToHome: () -> Unit, vi
             Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedFormTextField(
-                email,
+                logInFormState.value.email,
                 "Email",
                 { value -> viewModel.onEmailChange(value) },
                 Modifier.fillMaxWidth(),
                 KeyboardOptions(keyboardType = KeyboardType.Email),
                 VisualTransformation.None,
-                isError = emailError != null,
-                errorMessage = emailError
+                isError = logInFormState.value.emailError != null,
+                errorMessage = logInFormState.value.emailError
             )
             OutlinedFormTextField(
-                password,
+                logInFormState.value.password,
                 "Contraseña",
                 { value -> viewModel.onPasswordChange(value) },
                 Modifier.fillMaxWidth(),
                 KeyboardOptions(keyboardType = KeyboardType.Password),
                 PasswordVisualTransformation(),
-                isError = passwordError != null,
-                errorMessage = passwordError
+                isError = logInFormState.value.passwordError != null,
+                errorMessage = logInFormState.value.passwordError
             )
 
             Spacer(modifier = Modifier.height(8.dp))

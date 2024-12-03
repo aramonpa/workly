@@ -7,7 +7,7 @@ class ValidateEmail {
         return if (android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             ValidationResult(success = true)
         } else {
-            ValidationResult(success = false, errorMessage = "El correo no es válido")
+            ValidationResult(success = false, errorMessage = "El email no es válido")
         }
     }
 }

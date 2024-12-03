@@ -15,9 +15,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,6 +35,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -69,6 +72,11 @@ import kotlinx.coroutines.launch
 fun HomeScreen(onNavigateToCalendar: (String) -> Unit, navController: NavHostController, viewModel: HomeViewModel = hiltViewModel()) {
     val userState = viewModel.userState.collectAsState()
     val calendarListState = viewModel.calendarListState.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.fetchUser()
+        viewModel.fetchUserCalendars()
+    }
 
     when (userState.value) {
         is UiState.Loading -> {
@@ -184,7 +192,7 @@ fun CalendarList(
     navController: NavHostController) {
     Column (modifier = modifier) {
         Row(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
         ) {
             Text(
                 text = "Mis calendarios",
