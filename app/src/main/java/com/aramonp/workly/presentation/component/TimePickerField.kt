@@ -34,6 +34,7 @@ import java.util.Locale
 fun TimePickerField(
     value: String,
     label: String,
+    isError: Boolean,
     onTimeSelected: (String) -> Unit
 ) {
     val timePickerState = rememberTimePickerState()
@@ -44,6 +45,7 @@ fun TimePickerField(
         value = value,
         onValueChange = {},
         label = { Text(label) },
+        isError = isError,
         modifier = Modifier
             .width(150.dp)
             .pointerInput(value) {

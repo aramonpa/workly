@@ -17,7 +17,7 @@ interface FirestoreRepository {
     suspend fun addEvent(calendarId: String, event: Event): Result<Event>
     suspend fun getAllEventsByDay(calendarId: String, date: LocalDate): Result<List<Event>>
     suspend fun getEventInfo(calendarId: String, eventId: String): Result<Event?>
-    suspend fun updateEvent(calendarId: String, eventId: String, eventMap: Map<String, Any>): Result<Boolean>
+    suspend fun updateEvent(calendarId: String, eventId: String, eventMap: Map<String, Any?>): Result<Boolean>
     suspend fun deleteEvent(calendarId: String, eventId: String): Result<Boolean>
     suspend fun deleteCalendar(calendarId: String): Result<Boolean>
     suspend fun addTeamToCalendar(calendarId: String, teamName: String): Result<String>

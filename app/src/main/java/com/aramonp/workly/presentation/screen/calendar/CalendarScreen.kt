@@ -20,9 +20,11 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
@@ -62,6 +64,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -79,7 +82,6 @@ import com.aramonp.workly.presentation.component.AlertDialogTask
 import com.aramonp.workly.presentation.component.DatePickerField
 import com.aramonp.workly.presentation.component.OutlinedFormTextField
 import com.aramonp.workly.presentation.component.TimePickerField
-import com.aramonp.workly.util.combineDateAndTime
 import com.aramonp.workly.util.getTimeFromTimeStamp
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -110,7 +112,7 @@ fun CalendarScreen(calendarId: String, navController: NavHostController, viewMod
             FloatingActionButton(
                 onClick = { showDialog = true },
             ) {
-                Icon(Icons.Default.AddCircle, contentDescription = "Add calendar")
+                Icon(Icons.Default.AddCircle, contentDescription = stringResource(R.string.add_calendar_description))
             }
         }
     ) {
@@ -140,7 +142,7 @@ fun CalendarScreen(calendarId: String, navController: NavHostController, viewMod
                                 }
                             ) {
                                 if (events.data.isNullOrEmpty()) {
-                                    Text("No hay eventos para este día.")
+                                    Text(stringResource(R.string.no_events_text))
                                 } else {
                                     EventContent(
                                         Modifier
@@ -164,7 +166,10 @@ fun CalendarScreen(calendarId: String, navController: NavHostController, viewMod
                         ShowDialogSurface(
                             viewModel,
                             state.data,
-                            onDismiss = { showDialog = false }
+                            onDismiss = {
+                                showDialog = false
+                                viewModel.clearFields()
+                            }
                         )
                     }
                 }
@@ -174,7 +179,6 @@ fun CalendarScreen(calendarId: String, navController: NavHostController, viewMod
             }
             else -> Unit
         }
-
     }
 }
 
@@ -194,7 +198,7 @@ fun CalendarTopBar(id: String, viewModel: CalendarViewModel, navController: NavH
                 navController.popBackStack()
             }
         ) {
-            Image(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+            Image(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_text))
         }
         Spacer(modifier = Modifier.weight(1f))
         Box {
@@ -203,7 +207,7 @@ fun CalendarTopBar(id: String, viewModel: CalendarViewModel, navController: NavH
                     expanded = true
                 }
             ) {
-                Image(imageVector = Icons.Default.MoreVert, contentDescription = "Más")
+                Image(imageVector = Icons.Default.MoreVert, contentDescription = stringResource(R.string.more_text))
 
             }
             DropdownMenu(
@@ -211,14 +215,14 @@ fun CalendarTopBar(id: String, viewModel: CalendarViewModel, navController: NavH
                 onDismissRequest = { expanded = false }
             ) {
                 DropdownMenuItem(
-                    text = { Text("Ajustes") },
+                    text = { Text(stringResource(R.string.settings_title)) },
                     onClick = {
                         expanded = false
                         navController.navigate(Route.CalendarSettingsScreen.createRoute(id))
                     }
                 )
                 DropdownMenuItem(
-                    text = { Text("Eliminar") },
+                    text = { Text(stringResource(R.string.delete_text)) },
                     onClick = {
                         expanded = false
                         showAlertDialog.value = true
@@ -236,10 +240,10 @@ fun CalendarTopBar(id: String, viewModel: CalendarViewModel, navController: NavH
                         navController.popBackStack()
                     }
                 },
-                dialogTitle = "¿Está seguro?",
-                dialogText = "La operación de eliminar un calendario no se puede deshacer.",
+                dialogTitle = stringResource(R.string.asking_alert_text),
+                dialogText = stringResource(R.string.alert_dialog_calendar_description),
                 icon = Icons.Default.Info,
-                iconDescription = "Aviso"
+                iconDescription = stringResource(R.string.notice_text)
             )
         }
     }
@@ -286,12 +290,6 @@ fun CalendarContent(viewModel: CalendarViewModel) {
             }
         }
     }
-
-    // Mostrar la fecha seleccionada
-    /*selectedDate?.let { text ->
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(text = "Seleccionaste: $text")
-    }*/
 }
 
 @Composable
@@ -375,108 +373,81 @@ fun ShowDialogSurface(viewModel: CalendarViewModel, calendar: Calendar, onDismis
 @Composable
 fun EventForm(viewModel: CalendarViewModel, calendar: Calendar, onDismiss: () -> Unit) {
     val coroutineScope = rememberCoroutineScope()
-    var name by rememberSaveable { mutableStateOf("") }
-    var description by rememberSaveable { mutableStateOf("") }
-    var location by rememberSaveable { mutableStateOf("") }
-    var selectedStartDate by rememberSaveable { mutableStateOf("") }
-    var selectedStartTime by rememberSaveable { mutableStateOf("") }
-    var selectedEndDate by rememberSaveable { mutableStateOf("") }
-    var selectedEndTime by rememberSaveable { mutableStateOf("") }
-    var selectedTeam by rememberSaveable { mutableStateOf("") }
-
-    val titleError: String? by viewModel.titleError.collectAsState()
-    val descriptionError: String? by viewModel.descriptionError.collectAsState()
-    val datesError: String? by viewModel.datesError.collectAsState()
-    val assigneeError: String? by viewModel.assigneeError.collectAsState()
-
+    val eventFormState = viewModel.eventFormState.collectAsState()
+    val validationState = viewModel.validationState.collectAsState()
 
     Column(
         modifier = Modifier.padding(16.dp),
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Nuevo evento", fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.new_event_title), fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedFormTextField(
-            name,
-            "Título",
-            { name = it },
+            eventFormState.value.title,
+            stringResource(R.string.title_label),
+            { viewModel.onTitleChange(it) },
             Modifier.fillMaxWidth(),
             KeyboardOptions(keyboardType = KeyboardType.Text),
-            isError = titleError != null,
-            errorMessage = titleError
+            isError = eventFormState.value.titleError != null,
+            errorMessage = eventFormState.value.titleError
         )
 
         OutlinedFormTextField(
-            description,
-            "Descripción",
-            { description = it },
+            eventFormState.value.description,
+            stringResource(R.string.description_label),
+            { viewModel.onDescriptionChange(it) },
             Modifier.fillMaxWidth(),
             KeyboardOptions(keyboardType = KeyboardType.Text),
-            isError = descriptionError != null,
-            errorMessage = descriptionError
+            isError = eventFormState.value.descriptionError != null,
+            errorMessage = eventFormState.value.descriptionError
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Row(
-           modifier = Modifier.fillMaxWidth()
-        ) {
-            DatePickerField(
-                value = selectedStartDate,
-                label = "Fecha inicio",
-                onDateSelected = { date ->
-                    selectedStartDate = date
-                }
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            TimePickerField(
-                value = selectedStartTime,
-                label = "Hora inicio",
-                onTimeSelected = { time ->
-                    selectedStartTime = time
-                }
-            )
-        }
+        DateTimePicker(
+            dateValue = eventFormState.value.startDate,
+            timeValue = eventFormState.value.startTime,
+            dateLabel = stringResource(R.string.start_date_label),
+            timeLabel = stringResource(R.string.start_time_label),
+            isError = eventFormState.value.datesError != null,
+            onDateSelected = { viewModel.onStartDateChange(it) },
+            onTimeSelected = { viewModel.onStartTimeChange(it) }
+        )
 
-        Row(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            DatePickerField(
-                value = selectedEndDate,
-                label = "Fecha fin",
-                onDateSelected = { date ->
-                    selectedEndDate = date
-                }
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            TimePickerField(
-                value = selectedEndTime,
-                label = "Hora fin",
-                onTimeSelected = { time ->
-                    selectedEndTime = time
-                }
-            )
-        }
-        if (datesError != null) {
-            Text(datesError!!, color = Color.Red, fontSize = 12.sp)
+        DateTimePicker(
+            dateValue = eventFormState.value.endDate,
+            timeValue = eventFormState.value.endTime,
+            dateLabel = stringResource(R.string.end_date_label),
+            timeLabel = stringResource(R.string.end_time_label),
+            isError = eventFormState.value.datesError != null,
+            onDateSelected = { viewModel.onEndDateChange(it) },
+            onTimeSelected = { viewModel.onEndTimeChange(it) }
+        )
+
+
+        if (eventFormState.value.datesError != null) {
+            Text(eventFormState.value.datesError!!, color = Color.Red, fontSize = 12.sp)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedFormTextField(
-            location,
-            "Localización",
-            { location = it },
+            eventFormState.value.location ?: "",
+            stringResource(R.string.location_label),
+            { viewModel.onLocationChange(it) },
             Modifier.fillMaxWidth(),
             KeyboardOptions(keyboardType = KeyboardType.Text),
             isError = false,
             errorMessage = null
         )
 
-        DropDownMenu(calendar.teams) { selectedTeam = it }
-        if (assigneeError != null) {
-            Text(assigneeError!!, color = Color.Red, fontSize = 12.sp)
+        DropDownMenu(
+            calendar.teams,
+            eventFormState.value.assigneeError != null
+        ) { viewModel.onAssigneeChange(it) }
+        if (eventFormState.value.assigneeError != null) {
+            Text(eventFormState.value.assigneeError!!, color = Color.Red, fontSize = 12.sp)
         }
 
         Row (
@@ -486,25 +457,20 @@ fun EventForm(viewModel: CalendarViewModel, calendar: Calendar, onDismiss: () ->
                 modifier = Modifier.padding(8.dp),
                 onClick = onDismiss
             ) {
-                Text("Cerrar")
+                Text(stringResource(R.string.dismiss_dialog_text))
             }
             TextButton(
                 modifier = Modifier.padding(8.dp),
                 onClick = {
                     coroutineScope.launch {
-                        viewModel.addEvent(
-                            name,
-                            description,
-                            location,
-                            combineDateAndTime(selectedStartDate, selectedStartTime),
-                            combineDateAndTime(selectedEndDate, selectedEndTime),
-                            selectedTeam
-                        )
-                        onDismiss()
+                        viewModel.addEvent()
+                        if (validationState.value) {
+                            onDismiss()
+                        }
                     }
                 }
             ) {
-                Text("Crear")
+                Text(stringResource(R.string.confirm_dialog_text))
             }
         }
     }
@@ -512,7 +478,7 @@ fun EventForm(viewModel: CalendarViewModel, calendar: Calendar, onDismiss: () ->
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DropDownMenu(teams: List<String>, onItemSelected: (String) -> Unit) {
+fun DropDownMenu(teams: List<String>, isError: Boolean, onItemSelected: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     var selectedText by remember { mutableStateOf("") }
 
@@ -523,9 +489,10 @@ fun DropDownMenu(teams: List<String>, onItemSelected: (String) -> Unit) {
         OutlinedTextField(
             value = selectedText,
             onValueChange = { selectedText = it },
-            label = { Text(text = "Asignado") },
+            label = { Text(text = stringResource(R.string.assignee_label)) },
             singleLine = true,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            isError = isError,
             modifier = Modifier
                 .fillMaxWidth()
                 .menuAnchor(MenuAnchorType.PrimaryEditable, true)
@@ -561,10 +528,12 @@ fun DropDownMenu(teams: List<String>, onItemSelected: (String) -> Unit) {
 fun EventContent(modifier: Modifier, eventList: List<Event>, onEventClicked: (String) -> Unit) {
     Column (modifier = modifier) {
         Row(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
         ) {
             Text(
-                text = "Eventos",
+                text = stringResource(R.string.events_title),
                 fontSize = 20.sp
             )
             Spacer(modifier = Modifier.size(10.dp))
@@ -583,7 +552,7 @@ fun EventContent(modifier: Modifier, eventList: List<Event>, onEventClicked: (St
         if (eventList.isEmpty()) {
             Text(
                 modifier = Modifier.padding(top = 16.dp),
-                text = "No tienes ningún calendario aún.",
+                text = stringResource(R.string.no_events_text),
                 textAlign = TextAlign.Center)
         } else {
             LazyColumn(
@@ -596,7 +565,7 @@ fun EventContent(modifier: Modifier, eventList: List<Event>, onEventClicked: (St
                         item.title,
                         item.description,
                         item.assignee,
-                        "${getTimeFromTimeStamp(item.startDate)} - ${getTimeFromTimeStamp(item.endDate)}",
+                        "${getTimeFromTimeStamp(item.startDateTime)} - ${getTimeFromTimeStamp(item.endDateTime)}",
                         onEventClicked
                     )
                 }
@@ -653,5 +622,39 @@ fun EventItem(uid: String, name: String, description: String, team: String, time
                 )
             }
         }
+    }
+}
+
+@Composable
+fun DateTimePicker(
+    dateValue: String,
+    timeValue: String,
+    dateLabel: String,
+    timeLabel: String,
+    isError: Boolean,
+    onDateSelected: (String) -> Unit,
+    onTimeSelected: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        DatePickerField(
+            value = dateValue,
+            label = dateLabel,
+            isError = isError,
+            onDateSelected = { date ->
+
+                onDateSelected(date)
+            }
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        TimePickerField(
+            value = timeValue,
+            label = timeLabel,
+            isError = isError,
+            onTimeSelected = { time ->
+                onTimeSelected(time)
+            }
+        )
     }
 }

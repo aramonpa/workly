@@ -1,22 +1,18 @@
 package com.aramonp.workly.presentation.screen.calendar.settings.member
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.aramonp.workly.data.repository.FirestoreRepositoryImpl
-import com.aramonp.workly.domain.model.Calendar
 import com.aramonp.workly.domain.model.UiState
-import com.aramonp.workly.domain.use_case.ValidateEmail
-import com.aramonp.workly.domain.use_case.ValidateField
+import com.aramonp.workly.domain.use_case.ValidateUser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class MemberViewModel @Inject constructor(
     private val firestoreRepository: FirestoreRepositoryImpl,
-    private val validateEmail: ValidateEmail
+    private val validateUser: ValidateUser
 ): ViewModel() {
     private val _memberState = MutableStateFlow<UiState<List<String>>>(UiState.Loading)
     val memberState: StateFlow<UiState<List<String>>> = _memberState
@@ -42,14 +38,9 @@ class MemberViewModel @Inject constructor(
     }
 
     suspend fun addMember(member: String) {
-        if (!validateMember(member)) {
+        if (!validateField(member)) {
             return
         }
-
-        if (!validateUser(member)) {
-            return
-        }
-
         firestoreRepository.addMemberToCalendar(
             _calendarId.value,
             member
@@ -72,7 +63,6 @@ class MemberViewModel @Inject constructor(
             currentMembers.remove(member)
         }
 
-        // Emitir el nuevo estado encapsulado en `UIState.Success`
         _memberState.value = UiState.Success(currentMembers)
     }
 
@@ -82,31 +72,10 @@ class MemberViewModel @Inject constructor(
             member
         )
         onMemberChange(member, false)
-
     }
 
-    private suspend fun validateUser(member: String): Boolean {
-        firestoreRepository.getUserByEmail(member)
-            .onSuccess { value ->
-                if (value != null) {
-                    _nameError.value = null
-                    return true
-                } else {
-                    _nameError.value = "No existe el usuario."
-                    return false
-                }
-            }
-            .onFailure {
-            }
-
-        val memberValidation = validateEmail(member)
-        _nameError.value = memberValidation.errorMessage
-
-        return memberValidation.success
-    }
-
-    private fun validateMember(member: String): Boolean {
-        val memberValidation = validateEmail(member)
+    private suspend fun validateField(member: String): Boolean {
+        val memberValidation = validateUser(member)
         _nameError.value = memberValidation.errorMessage
 
         return memberValidation.success

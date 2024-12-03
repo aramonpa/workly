@@ -16,24 +16,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -46,10 +43,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun LogInScreen(onNavigateToSignUp: () -> Unit, onNavigateToHome: () -> Unit, viewModel: LogInViewModel = hiltViewModel()) {
     val authState = viewModel.authState.collectAsState()
-    val email: String by viewModel.email.collectAsState()
-    val emailError: String? by viewModel.emailError.collectAsState()
-    val password: String by viewModel.password.collectAsState()
-    val passwordError: String? by viewModel.passwordError.collectAsState()
+    val logInFormState = viewModel.logInFormState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
     Scaffold(modifier = Modifier.fillMaxSize()) {
@@ -65,34 +59,34 @@ fun LogInScreen(onNavigateToSignUp: () -> Unit, onNavigateToHome: () -> Unit, vi
             Row(
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
-                Text("Workly", fontSize = 50.sp)
+                Text(stringResource(R.string.app_name), fontSize = 50.sp)
             }
             Spacer(modifier = Modifier.weight(1f))
             Row(
             ) {
-                Text("Crea una cuenta o inicia sesión para empezar a gestionar tus equipos.")
+                Text(stringResource(R.string.login_description))
             }
             Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedFormTextField(
-                email,
-                "Email",
+                logInFormState.value.email,
+                stringResource(R.string.email_label),
                 { value -> viewModel.onEmailChange(value) },
                 Modifier.fillMaxWidth(),
                 KeyboardOptions(keyboardType = KeyboardType.Email),
                 VisualTransformation.None,
-                isError = emailError != null,
-                errorMessage = emailError
+                isError = logInFormState.value.emailError != null,
+                errorMessage = logInFormState.value.emailError
             )
             OutlinedFormTextField(
-                password,
-                "Contraseña",
+                logInFormState.value.password,
+                stringResource(R.string.password_label),
                 { value -> viewModel.onPasswordChange(value) },
                 Modifier.fillMaxWidth(),
                 KeyboardOptions(keyboardType = KeyboardType.Password),
                 PasswordVisualTransformation(),
-                isError = passwordError != null,
-                errorMessage = passwordError
+                isError = logInFormState.value.passwordError != null,
+                errorMessage = logInFormState.value.passwordError
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -105,29 +99,29 @@ fun LogInScreen(onNavigateToSignUp: () -> Unit, onNavigateToHome: () -> Unit, vi
                 shape = RoundedCornerShape(5.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Iniciar sesión")
+                Text(stringResource(R.string.login_button_text))
             }
             TextButton(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 onClick = { onNavigateToSignUp() }
             ) {
                 Text(
-                    text = "¿No tienes una cuenta? Regístrate",
+                    text = stringResource(R.string.not_have_an_account_text),
                     color = Color.Gray
                 )
             }
 
             if (authState.value is AuthState.Error) {
                 val errorMessage = (authState.value as AuthState.Error).message
-                Text("Error: $errorMessage", color = Color.Red)
+                Text(errorMessage, color = Color.Red)
             }
 
             Spacer(modifier = Modifier.weight(1f))
-            SocialButton({}, R.drawable.apple, "Continuar con Apple")
+            SocialButton({}, R.drawable.apple, stringResource(R.string.login_with_apple))
             Spacer(modifier = Modifier.height(8.dp))
-            SocialButton({}, R.drawable.google, "Continuar con Google")
+            SocialButton({}, R.drawable.google, stringResource(R.string.login_with_google))
             Spacer(modifier = Modifier.height(8.dp))
-            SocialButton({}, R.drawable.facebook, "Continuar con Facebook")
+            SocialButton({}, R.drawable.facebook, stringResource(R.string.login_with_facebook))
         }
     }
 

@@ -33,6 +33,7 @@ fun DateTimePickerField(
     dateLabel: String,
     timeLabel: String,
     value: Timestamp,
+    isError: Boolean,
     onConfirmation: (Timestamp) -> Unit
 ) {
     val date = getDateFromTimeStamp(value)
@@ -69,12 +70,14 @@ fun DateTimePickerField(
                             DatePickerField(
                                 value = selectedDate,
                                 label = dateLabel,
+                                isError = isError,
                                 onDateSelected = {selectedDate = it}
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             TimePickerField(
                                 value = selectedTime,
                                 label = timeLabel,
+                                isError = isError,
                                 onTimeSelected = {selectedTime = it}
                             )
                         }

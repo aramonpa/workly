@@ -2,9 +2,9 @@ package com.aramonp.workly.presentation.screen.profile.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aramonp.workly.data.repository.AuthRepositoryImpl
 import com.aramonp.workly.data.repository.FirestoreRepositoryImpl
 import com.aramonp.workly.domain.model.Calendar
+import com.aramonp.workly.domain.model.CalendarSettingsFormState
 import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.domain.use_case.ValidateField
 import com.google.firebase.Timestamp
@@ -22,29 +22,52 @@ class CalendarSettingsViewModel @Inject constructor(
     private val _settingsState = MutableStateFlow<UiState<Calendar>>(UiState.Loading)
     val settingsState: StateFlow<UiState<Calendar>> = _settingsState
 
-    private val _name = MutableStateFlow("")
-    val name: StateFlow<String> = _name
+    private val _calendarSettingsFormState = MutableStateFlow(CalendarSettingsFormState())
+    val calendarSettingsFormState: StateFlow<CalendarSettingsFormState> = _calendarSettingsFormState
 
-    private val _nameError = MutableStateFlow<String?>(null)
-    val nameError: StateFlow<String?> = _nameError
-
-    private val _description = MutableStateFlow("")
-    val description: StateFlow<String> = _description
-
-    private val _descriptionError = MutableStateFlow<String?>(null)
-    val descriptionError: StateFlow<String?> = _descriptionError
-
-    private val _teamError = MutableStateFlow<String?>(null)
-    val teamError: StateFlow<String?> = _teamError
+    private val _validationState = MutableStateFlow(false)
+    val validationState: StateFlow<Boolean> = _validationState
 
     private val _calendarId = MutableStateFlow("")
 
+    suspend fun fetchCalendar(calendarId: String) {
+        _calendarId.value = calendarId
+        getCalendarInfo(calendarId)
+            .onSuccess { calendar ->
+                fillFormState(calendar!!)
+                _settingsState.value = UiState.Success(calendar)
+            }
+            .onFailure { error ->
+                UiState.Error(error.message.orEmpty())
+            }
+    }
+
+    suspend fun updateCalendarInfo() {
+        if (validateFields()) {
+            _validationState.value = true
+        } else {
+            _validationState.value = false
+            return
+        }
+
+        firestoreRepository.updateCalendar(
+            _calendarId.value,
+            mapOf(
+                "name" to _calendarSettingsFormState.value.name,
+                "description" to _calendarSettingsFormState.value.description,
+                "updatedAt" to Timestamp.now()
+            )
+        )
+        onCalendarFieldChange { calendar -> calendar.copy(name = _calendarSettingsFormState.value.name) }
+        onCalendarFieldChange { calendar -> calendar.copy(description = _calendarSettingsFormState.value.description) }
+    }
+
     fun onNameChange(name: String) {
-        onCalendarFieldChange { calendar -> calendar.copy(name = name) }
+        _calendarSettingsFormState.value = _calendarSettingsFormState.value.copy(name = name)
     }
 
     fun onDescriptionChange(description: String) {
-        onCalendarFieldChange { calendar -> calendar.copy(description = description) }
+        _calendarSettingsFormState.value = _calendarSettingsFormState.value.copy(description = description)
     }
 
     private fun onTeamChange(team: String, add: Boolean) {
@@ -72,77 +95,67 @@ class CalendarSettingsViewModel @Inject constructor(
         }
     }
 
-    suspend fun fetchCalendar(calendarId: String) {
-        _calendarId.value = calendarId
-        getCalendarInfo(calendarId)
-            .onSuccess { calendar ->
-                _settingsState.value = UiState.Success(calendar!!)
-            }
-            .onFailure { error ->
-                UiState.Error(error.message.orEmpty())
-            }
-    }
-
     private suspend fun getCalendarInfo(calendarId: String): Result<Calendar?> {
         return firestoreRepository.getCalendar(calendarId)
     }
 
-    suspend fun updateCalendarInfo() {
-        val state = (settingsState.value as UiState.Success<Calendar>)
-
-        if (!validateFields(state.data)) {
-            return
-        }
-
-        viewModelScope.launch {
-            firestoreRepository.updateCalendar(
-                _calendarId.value,
-                mapOf(
-                    "name" to state.data.name,
-                    "description" to state.data.description,
-                    "updatedAt" to Timestamp.now()
-                )
-            )
-        }
+    private fun fillFormState(calendar: Calendar) {
+        _calendarSettingsFormState.value = _calendarSettingsFormState.value.copy(name = calendar.name)
+        _calendarSettingsFormState.value = _calendarSettingsFormState.value.copy(description = calendar.description)
     }
 
-    suspend fun addTeam(teamName: String) {
-        if (!validateTeam(teamName)) {
+    suspend fun addTeam(team: String) {
+        if (validateTeam(team)) {
+            _validationState.value = true
+        } else {
+            _validationState.value = false
             return
         }
-
         firestoreRepository.addTeamToCalendar(
             _calendarId.value,
-            teamName
+            team
         )
-        onTeamChange(teamName, true)
+        onTeamChange(team, true)
     }
 
-    suspend fun deleteTeam(teamName: String) {
+    suspend fun deleteTeam(team: String) {
         viewModelScope.launch {
             firestoreRepository.deleteTeamToCalendar(
                 _calendarId.value,
-                teamName
+                team
             )
-            onTeamChange(teamName, false)
+            onTeamChange(team, false)
         }
     }
 
-    private fun validateFields(calendar: Calendar): Boolean {
-        val nameValidation = validateField(calendar.name)
-        val descriptionValidation = validateField(calendar.description)
+    private fun validateFields(): Boolean {
+        val nameValidation = validateField(_calendarSettingsFormState.value.name)
+        val descriptionValidation = validateField(_calendarSettingsFormState.value.description)
 
-        _nameError.value = nameValidation.errorMessage
-        _descriptionError.value = descriptionValidation.errorMessage
+        _calendarSettingsFormState.value = _calendarSettingsFormState.value.copy(
+            nameError = nameValidation.errorMessage,
+            descriptionError = descriptionValidation.errorMessage,
 
-        // Si hay errores, no continuar
+        )
+
         return nameValidation.success && descriptionValidation.success
     }
 
     private fun validateTeam(team: String): Boolean {
         val teamValidation = validateField(team)
-        _nameError.value = teamValidation.errorMessage
+
+        _calendarSettingsFormState.value = _calendarSettingsFormState.value.copy(
+            teamError = teamValidation.errorMessage
+        )
 
         return teamValidation.success
+    }
+
+    fun clearErrors() {
+        _calendarSettingsFormState.value = _calendarSettingsFormState.value.copy(
+            nameError = null,
+            descriptionError = null,
+            teamError = null
+        )
     }
 }

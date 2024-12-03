@@ -1,10 +1,12 @@
 package com.aramonp.workly.di
 
 import com.aramonp.workly.domain.use_case.ValidateDates
+import com.aramonp.workly.domain.use_case.ValidateDatesFields
 import com.aramonp.workly.domain.use_case.ValidateEmail
 import com.aramonp.workly.domain.use_case.ValidateField
 import com.aramonp.workly.domain.use_case.ValidatePassword
 import com.aramonp.workly.domain.use_case.ValidateRepeatedPassword
+import com.aramonp.workly.domain.use_case.ValidateUser
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -42,5 +44,11 @@ object UseCaseModule {
     @Singleton
     fun provideValidateDates(): ValidateDates {
         return ValidateDates()
+    }
+
+    @Provides
+    @Singleton
+    fun provideValidateDatesFields(): ValidateDatesFields {
+        return ValidateDatesFields()
     }
 }

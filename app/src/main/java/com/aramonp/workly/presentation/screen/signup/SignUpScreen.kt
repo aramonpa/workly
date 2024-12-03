@@ -15,22 +15,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -44,17 +40,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SignUpScreen(onNavigateToLogIn: () -> Unit = {}, onNavigateToHome: () -> Unit = {}, viewModel: SignUpViewModel = hiltViewModel()) {
     val authState = viewModel.authState.collectAsState()
-    val user = viewModel.user.collectAsState()
-    val password: String by viewModel.password.collectAsState()
-    val repeatedPassword: String by viewModel.repeatedPassword.collectAsState()
-
-    val nameError by viewModel.nameError.collectAsState()
-    val surnameError by viewModel.surnameError.collectAsState()
-    val usernameError by viewModel.usernameError.collectAsState()
-    val emailError by viewModel.emailError.collectAsState()
-    val passwordError by viewModel.passwordError.collectAsState()
-    val repeatedPasswordError by viewModel.repeatedPasswordError.collectAsState()
-
+    val signUpFormState = viewModel.signUpFormState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
     Scaffold(modifier = Modifier.fillMaxSize()) {
@@ -68,60 +54,60 @@ fun SignUpScreen(onNavigateToLogIn: () -> Unit = {}, onNavigateToHome: () -> Uni
         ) {
             Spacer(modifier = Modifier.weight(1f))
             OutlinedFormTextField(
-                user.value.name,
-                "Nombre",
+                signUpFormState.value.name,
+                stringResource(R.string.name_label),
                 { value -> viewModel.onNameChange(value.trim()) },
                 Modifier.fillMaxWidth(),
                 KeyboardOptions(keyboardType = KeyboardType.Text),
-                isError = nameError != null,
-                errorMessage = nameError
+                isError = signUpFormState.value.nameError != null,
+                errorMessage = signUpFormState.value.nameError
             )
             OutlinedFormTextField(
-                user.value.surname,
-                "Apellidos",
+                signUpFormState.value.surname,
+                stringResource(R.string.surname_label),
                 { value -> viewModel.onSurnameChange(value.trim()) },
                 Modifier.fillMaxWidth(),
                 KeyboardOptions(keyboardType = KeyboardType.Text),
-                isError = surnameError != null,
-                errorMessage = surnameError
+                isError = signUpFormState.value.surnameError != null,
+                errorMessage = signUpFormState.value.surnameError
             )
             OutlinedFormTextField(
-                user.value.email,
-                "Email",
+                signUpFormState.value.email,
+                stringResource(R.string.email_label),
                 { value -> viewModel.onEmailChange(value.trim()) },
                 Modifier.fillMaxWidth(),
                 KeyboardOptions(keyboardType = KeyboardType.Email),
-                isError = emailError != null,
-                errorMessage = emailError
+                isError = signUpFormState.value.emailError != null,
+                errorMessage = signUpFormState.value.emailError
             )
             OutlinedFormTextField(
-                user.value.username,
-                "Nombre de usuario",
+                signUpFormState.value.username,
+                stringResource(R.string.username_label),
                 { value -> viewModel.onUsernameChange(value.trim()) },
                 Modifier.fillMaxWidth(),
                 KeyboardOptions(keyboardType = KeyboardType.Text),
-                isError = usernameError != null,
-                errorMessage = usernameError
+                isError = signUpFormState.value.usernameError != null,
+                errorMessage = signUpFormState.value.usernameError
             )
             OutlinedFormTextField(
-                password,
-                "Contraseña",
+                signUpFormState.value.password,
+                stringResource(R.string.password_label),
                 { value -> viewModel.onPasswordChange(value.trim()) },
                 Modifier.fillMaxWidth(),
                 KeyboardOptions(keyboardType = KeyboardType.Password),
                 PasswordVisualTransformation(),
-                isError = passwordError != null,
-                errorMessage = passwordError
+                isError = signUpFormState.value.passwordError != null,
+                errorMessage = signUpFormState.value.passwordError
             )
             OutlinedFormTextField(
-                repeatedPassword,
-                "Confirmar contraseña",
+                signUpFormState.value.confirmPassword,
+                stringResource(R.string.confirm_password_label),
                 { value -> viewModel.onRepeatedPasswordChange(value.trim()) },
                 Modifier.fillMaxWidth(),
                 KeyboardOptions(keyboardType = KeyboardType.Password),
                 PasswordVisualTransformation(),
-                isError = repeatedPasswordError != null,
-                errorMessage = repeatedPasswordError
+                isError = signUpFormState.value.confirmPasswordError != null,
+                errorMessage = signUpFormState.value.confirmPasswordError
             )
             Spacer(modifier = Modifier.height(9.dp))
             Button(
@@ -133,43 +119,34 @@ fun SignUpScreen(onNavigateToLogIn: () -> Unit = {}, onNavigateToHome: () -> Uni
                 shape = RoundedCornerShape(5.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Registrarse")
+                Text(stringResource(R.string.register_button_text))
             }
             TextButton(
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 onClick = { onNavigateToLogIn() }
             ) {
                 Text(
-                    text = "¿Ya tienes una cuenta? Inicia sesión",
+                    text = stringResource(R.string.have_an_account_text),
                     color = Color.Gray
                 )
             }
-            /*
-            Button(
-                onClick = onNavigateToLogIn,
-                colors = ButtonDefaults.buttonColors(Color.White),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Iniciar sesión", color = Color.Gray)
-            }
-             */
             Spacer(modifier = Modifier.weight(1f))
             SocialButton(
                 {},
                 R.drawable.apple,
-                "Continuar con Apple"
+                stringResource(R.string.login_with_apple)
             )
             Spacer(modifier = Modifier.height(8.dp))
             SocialButton(
                 {},
                 R.drawable.google,
-                "Continuar con Google"
+                stringResource(R.string.login_with_google)
             )
             Spacer(modifier = Modifier.height(8.dp))
             SocialButton(
                 {},
                 R.drawable.facebook,
-                "Continuar con Facebook"
+                stringResource(R.string.login_with_facebook)
             )
         }
     }
@@ -190,7 +167,7 @@ fun SignUpScreen(onNavigateToLogIn: () -> Unit = {}, onNavigateToHome: () -> Uni
         }
         is AuthState.Error -> {
             val errorMessage = (authState.value as AuthState.Error).message
-            Text("Error: $errorMessage", color = Color.Red)
+            Text(errorMessage, color = Color.Red)
         }
         else -> Unit
     }

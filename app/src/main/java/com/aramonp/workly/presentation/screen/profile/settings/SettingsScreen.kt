@@ -12,12 +12,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.aramonp.workly.R
 import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.domain.model.User
 import com.aramonp.workly.presentation.component.CircularProgress
@@ -27,11 +28,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewModel = hiltViewModel()) {
     val settingsState = viewModel.settingsState.collectAsState()
-    val nameError by viewModel.nameError.collectAsState()
-    val surnameError by viewModel.surnameError.collectAsState()
-    val userNameError by viewModel.userNameError.collectAsState()
+    val settingsFormState = viewModel.settingsFormState.collectAsState()
+    val validationState = viewModel.validationState.collectAsState()
     val coroutineScope = rememberCoroutineScope()
-
 
     Scaffold(
         topBar = {
@@ -43,7 +42,10 @@ fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewMode
                         navController.popBackStack()
                     }
                 ) {
-                    Image(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                    Image(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(
+                        R.string.back_text
+                    )
+                    )
                 }
             }
         }
@@ -60,10 +62,14 @@ fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewMode
                         .padding(16.dp)
                 ) {
                     LabeledField(
-                        "Nombre",
+                        stringResource(R.string.name_label),
                         state.data.name,
-                        isError = nameError != null,
-                        errorMessage = nameError
+                        isError = settingsFormState.value.nameError != null,
+                        errorMessage = settingsFormState.value.nameError,
+                        validationState = validationState,
+                        onDismiss = {
+                            viewModel.clearErrors()
+                        }
                     ) { value ->
                         coroutineScope.launch {
                             viewModel.onNameChange(value)
@@ -72,10 +78,14 @@ fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewMode
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
                     LabeledField(
-                        "Apellidos",
+                        stringResource(R.string.surname_label),
                         state.data.surname,
-                        isError = surnameError != null,
-                        errorMessage = surnameError
+                        isError = settingsFormState.value.surnameError != null,
+                        errorMessage = settingsFormState.value.surnameError,
+                        validationState = validationState,
+                        onDismiss = {
+                            viewModel.clearErrors()
+                        }
                     ) { value ->
                         coroutineScope.launch {
                             viewModel.onSurnameChange(value)
@@ -84,10 +94,14 @@ fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewMode
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
                     LabeledField(
-                        "Nombre de usuario",
+                        stringResource(R.string.username_label),
                         state.data.username,
-                        isError = userNameError != null,
-                        errorMessage = userNameError
+                        isError = settingsFormState.value.usernameError != null,
+                        errorMessage = settingsFormState.value.usernameError,
+                        validationState = validationState,
+                        onDismiss = {
+                            viewModel.clearErrors()
+                        }
                     ) { value ->
                         coroutineScope.launch {
                             viewModel.onUsernameChange(value)
@@ -100,6 +114,5 @@ fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewMode
                 Text(text = (settingsState.value as UiState.Error).message)
             }
         }
-
     }
 }

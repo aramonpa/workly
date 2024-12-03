@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import com.aramonp.workly.data.repository.AuthRepositoryImpl
 import com.aramonp.workly.data.repository.FirestoreRepositoryImpl
 import com.aramonp.workly.domain.model.AuthState
+import com.aramonp.workly.domain.model.SignUpFormState
 import com.aramonp.workly.domain.model.User
 import com.aramonp.workly.domain.use_case.ValidateEmail
 import com.aramonp.workly.domain.use_case.ValidateField
@@ -27,57 +28,8 @@ class SignUpViewModel @Inject constructor(
     private val _authState = MutableStateFlow<AuthState>(AuthState.Unauthenticated)
     val authState: StateFlow<AuthState> = _authState
 
-    private val _user = MutableStateFlow(User())
-    val user: StateFlow<User> = _user
-
-    private val _password = MutableStateFlow("")
-    val password: StateFlow<String> = _password
-
-    private val _repeatedPassword = MutableStateFlow("")
-    val repeatedPassword: StateFlow<String> = _repeatedPassword
-
-    private val _nameError = MutableStateFlow<String?>(null)
-    val nameError: StateFlow<String?> = _nameError
-
-    private val _surnameError = MutableStateFlow<String?>(null)
-    val surnameError: StateFlow<String?> = _surnameError
-
-    private val _usernameError = MutableStateFlow<String?>(null)
-    val usernameError: StateFlow<String?> = _usernameError
-
-    private val _emailError = MutableStateFlow<String?>(null)
-    val emailError: StateFlow<String?> = _emailError
-
-    private val _passwordError = MutableStateFlow<String?>(null)
-    val passwordError: StateFlow<String?> = _passwordError
-
-    private val _repeatedPasswordError = MutableStateFlow<String?>(null)
-    val repeatedPasswordError: StateFlow<String?> = _repeatedPasswordError
-
-
-    fun onNameChange(name: String) {
-        _user.value = _user.value.copy(name = name)
-    }
-
-    fun onSurnameChange(surname: String) {
-        _user.value = _user.value.copy(surname = surname)
-    }
-
-    fun onUsernameChange(username: String) {
-        _user.value = _user.value.copy(username = username)
-    }
-
-    fun onEmailChange(email: String) {
-        _user.value = _user.value.copy(email = email)
-    }
-
-    fun onPasswordChange(password: String) {
-        _password.value = password
-    }
-
-    fun onRepeatedPasswordChange(password: String) {
-        _repeatedPassword.value = password
-    }
+    private val _signUpFormState = MutableStateFlow(SignUpFormState())
+    val signUpFormState: StateFlow<SignUpFormState> = _signUpFormState
 
     suspend fun signUp() {
         _authState.value = AuthState.Loading
@@ -88,16 +40,16 @@ class SignUpViewModel @Inject constructor(
         }
 
         val user = User(
-            name = _user.value.name,
-            surname = _user.value.surname,
-            username = _user.value.username,
-            email = _user.value.email,
+            name = _signUpFormState.value.name,
+            surname = _signUpFormState.value.surname,
+            username = _signUpFormState.value.username,
+            email = _signUpFormState.value.email,
             active = 1,
             createdAt = Timestamp.now(),
             updatedAt = null
         )
 
-        val authResult = authRepository.signUp(user.email, password.value)
+        val authResult = authRepository.signUp(user.email, _signUpFormState.value.password)
 
         authResult
             .onSuccess {
@@ -115,22 +67,47 @@ class SignUpViewModel @Inject constructor(
             }
     }
 
+    fun onNameChange(name: String) {
+        _signUpFormState.value = _signUpFormState.value.copy(name = name)
+    }
+
+    fun onSurnameChange(surname: String) {
+        _signUpFormState.value = _signUpFormState.value.copy(surname = surname)
+    }
+
+    fun onUsernameChange(username: String) {
+        _signUpFormState.value = _signUpFormState.value.copy(username = username)
+    }
+
+    fun onEmailChange(email: String) {
+        _signUpFormState.value = _signUpFormState.value.copy(email = email)
+    }
+
+    fun onPasswordChange(password: String) {
+        _signUpFormState.value = _signUpFormState.value.copy(password = password)
+    }
+
+    fun onRepeatedPasswordChange(password: String) {
+        _signUpFormState.value = _signUpFormState.value.copy(confirmPassword = password)
+    }
+
     private fun validateFields(): Boolean {
-        val nameValidation = validateField(_user.value.name)
-        val surnameValidation = validateField(_user.value.surname)
-        val usernameValidation = validateField(_user.value.username)
-        val emailValidation = validateEmail(_user.value.email)
-        val passwordValidation = validatePassword(_password.value)
-        val repeatedPasswordValidation = validateRepeatedPassword(_password.value, _repeatedPassword.value)
+        val nameValidation = validateField(_signUpFormState.value.name)
+        val surnameValidation = validateField(_signUpFormState.value.surname)
+        val usernameValidation = validateField(_signUpFormState.value.username)
+        val emailValidation = validateEmail(_signUpFormState.value.email)
+        val passwordValidation = validatePassword(_signUpFormState.value.password)
+        val repeatedPasswordValidation = validateRepeatedPassword(_signUpFormState.value.password, _signUpFormState.value.confirmPassword)
 
-        _nameError.value = nameValidation.errorMessage
-        _surnameError.value = surnameValidation.errorMessage
-        _usernameError.value = usernameValidation.errorMessage
-        _emailError.value = emailValidation.errorMessage
-        _passwordError.value = passwordValidation.errorMessage
-        _repeatedPasswordError.value = repeatedPasswordValidation.errorMessage
+        _signUpFormState.value = _signUpFormState.value.copy(
+            nameError = nameValidation.errorMessage,
+            surnameError = surnameValidation.errorMessage,
+            usernameError = usernameValidation.errorMessage,
+            emailError = emailValidation.errorMessage,
+            passwordError = passwordValidation.errorMessage,
+            confirmPasswordError = repeatedPasswordValidation.errorMessage
+        )
 
-        // Si hay errores, no continuar
         return nameValidation.success && surnameValidation.success && usernameValidation.success &&
             emailValidation.success && passwordValidation.success && repeatedPasswordValidation.success
     }

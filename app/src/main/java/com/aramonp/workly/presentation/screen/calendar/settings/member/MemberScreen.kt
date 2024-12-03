@@ -1,57 +1,41 @@
 package com.aramonp.workly.presentation.screen.calendar.settings.member
 
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import com.aramonp.workly.domain.model.Calendar
+import com.aramonp.workly.R
 import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.presentation.component.AlertDialogTask
 import com.aramonp.workly.presentation.component.CircularProgress
-import com.aramonp.workly.presentation.component.LabeledField
-import com.aramonp.workly.presentation.component.OutlinedFormTextField
 import com.aramonp.workly.presentation.component.OutlinedTextFieldDialog
-import com.aramonp.workly.presentation.screen.profile.settings.CalendarSettingsViewModel
 import kotlinx.coroutines.launch
 
 @Composable
@@ -76,7 +60,8 @@ fun MemberScreen(id: String, navController: NavHostController, viewModel: Member
                         navController.popBackStack()
                     }
                 ) {
-                    Image(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                    Image(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(
+                        R.string.back_text))
                 }
             }
         }
@@ -93,7 +78,7 @@ fun MemberScreen(id: String, navController: NavHostController, viewModel: Member
                         .padding(16.dp)
                 ) {
                     DetailedList(
-                        title = "Miembros del calendario",
+                        title = stringResource(R.string.calendar_members_title),
                         items = state.data,
                         onDelete = { value ->
                             coroutineScope.launch {
@@ -137,7 +122,7 @@ fun DetailedList(
                 showAlertDialog.value = true
             }
         ) {
-            Image(imageVector = Icons.Default.Add, contentDescription = "Añadir")
+            Image(imageVector = Icons.Default.Add, contentDescription = stringResource(R.string.add_member_description))
 
         }
     }
@@ -157,7 +142,7 @@ fun DetailedList(
             onConfirmation = {
                 onConfirmation(it)
             },
-            dialogTitle = "Nuevo miembro",
+            dialogTitle = stringResource(R.string.new_member_dialog_title),
             dialogText = "",
             isError = errorMessage != null,
             errorMessage = errorMessage
@@ -175,11 +160,13 @@ fun DetailedItem(index: Int, member: String, onDelete: (String) -> Unit) {
         Text(member)
         Spacer(modifier = Modifier.weight(1f))
 
-        if(index != 0) {
+        if (index == 0) {
+           Text(stringResource(R.string.owner_tag))
+        } else {
             IconButton (
                 onClick = { showAlertDialog.value = true }
             ) {
-                Image(imageVector = Icons.Default.Clear, contentDescription = "Eliminar")
+                Image(imageVector = Icons.Default.Clear, contentDescription = stringResource(R.string.delete_text))
             }
         }
     }
@@ -187,64 +174,10 @@ fun DetailedItem(index: Int, member: String, onDelete: (String) -> Unit) {
         AlertDialogTask(
             onDismissRequest = { showAlertDialog.value = false },
             onConfirmation = { onDelete(member) },
-            dialogTitle = "¿Está seguro?",
-            dialogText = "La operación de eliminar un miembro no se puede deshacer.",
+            dialogTitle = stringResource(R.string.asking_alert_text),
+            dialogText = stringResource(R.string.altert_dialog_member_description),
             icon = Icons.Default.Info,
-            iconDescription = "Aviso"
+            iconDescription = stringResource(R.string.notice_text)
         )
-    }
-}
-
-@Composable
-fun ShowDialogSurface(viewModel: MemberViewModel, onDismiss: () -> Unit = {}, errorMessage: String?) {
-    val coroutineScope = rememberCoroutineScope()
-    val name = remember { mutableStateOf("") }
-
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = MaterialTheme.shapes.large,
-            tonalElevation = 3.dp
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text("Nuevo miembro", fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedFormTextField(
-                    name.value,
-                    "Nombre",
-                    { name.value = it },
-                    Modifier.fillMaxWidth(),
-                    KeyboardOptions(keyboardType = KeyboardType.Text),
-                    isError = errorMessage != null,
-                    errorMessage = errorMessage
-                )
-                Row(
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                ) {
-                    TextButton(
-                        modifier = Modifier.padding(8.dp),
-                        onClick = onDismiss
-                    ) {
-                        Text("Cerrar")
-                    }
-                    TextButton(
-                        modifier = Modifier.padding(8.dp),
-                        onClick = {
-                            coroutineScope.launch {
-                                viewModel.addMember(name.value)
-                                name.value = ""
-                                onDismiss()
-                            }
-                        }
-                    ) {
-                        Text("Crear")
-                    }
-                }
-
-            }
-        }
     }
 }

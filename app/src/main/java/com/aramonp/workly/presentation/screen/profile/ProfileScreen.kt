@@ -26,11 +26,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.aramonp.workly.R
 import com.aramonp.workly.navigation.Route
 import com.aramonp.workly.presentation.component.BottomNavigationBar
 import kotlinx.coroutines.launch
@@ -47,7 +49,7 @@ fun ProfileScreen(navController: NavHostController, viewModel: ProfileViewModel 
                 modifier = Modifier.padding(top = 32.dp, start = 16.dp, end = 16.dp)
             ) {
                 Text(
-                    "Cuenta",
+                    stringResource(R.string.profile_title),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -72,19 +74,18 @@ fun ProfileScreen(navController: NavHostController, viewModel: ProfileViewModel 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     ) {
-                    Image(imageVector = Icons.Default.Settings, contentDescription = "Ajustes")
+                    Image(imageVector = Icons.Default.Settings, contentDescription = stringResource(R.string.settings_title))
                     Column(
                         modifier = Modifier
                             .padding(start = 16.dp)
                     ) {
-                        Text("Ajustes", fontWeight = FontWeight.Bold)
-                        Text("Modifica tus datos de usuario")
+                        Text(stringResource(R.string.settings_title), fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.settings_description))
                     }
                     Spacer(modifier = Modifier.weight(1f))
                     Image(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "Ajustes",
-
+                        contentDescription = null
                         )
                 }
             }
@@ -97,13 +98,13 @@ fun ProfileScreen(navController: NavHostController, viewModel: ProfileViewModel 
                 verticalAlignment = Alignment.CenterVertically,
 
                 ) {
-                Image(imageVector = Icons.Default.Notifications, contentDescription = "Notificaciones")
+                Image(imageVector = Icons.Default.Notifications, contentDescription = stringResource(R.string.notifications_title))
                 Column(
                     modifier = Modifier
                         .padding(start = 16.dp)
                 ) {
-                    Text("Notificaciones", fontWeight = FontWeight.Bold)
-                    Text("Habilita las notificaciones")
+                    Text(stringResource(R.string.notifications_title), fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.notifications_description))
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Switch(
@@ -132,7 +133,7 @@ fun ProfileScreen(navController: NavHostController, viewModel: ProfileViewModel 
                     .fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(Color.Red),
             ) {
-                Text("Cerrar sesión")
+                Text(stringResource(R.string.close_session_button_text))
             }
         }
     }

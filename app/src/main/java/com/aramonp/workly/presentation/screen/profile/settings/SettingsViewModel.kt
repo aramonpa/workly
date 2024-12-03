@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aramonp.workly.data.repository.AuthRepositoryImpl
 import com.aramonp.workly.data.repository.FirestoreRepositoryImpl
+import com.aramonp.workly.domain.model.SettingsFormState
 import com.aramonp.workly.domain.model.UiState
 import com.aramonp.workly.domain.model.User
 import com.aramonp.workly.domain.use_case.ValidateField
@@ -24,31 +25,16 @@ class SettingsViewModel @Inject constructor(
     private val _settingsState = MutableStateFlow<UiState<User>>(UiState.Loading)
     val settingsState: StateFlow<UiState<User>> = _settingsState
 
-    private val _nameError = MutableStateFlow<String?>(null)
-    val nameError: StateFlow<String?> = _nameError
+    private val _settingsFormState = MutableStateFlow(SettingsFormState())
+    val settingsFormState: StateFlow<SettingsFormState> = _settingsFormState
 
-    private val _surnameError = MutableStateFlow<String?>(null)
-    val surnameError: StateFlow<String?> = _surnameError
-
-    private val _userNameError = MutableStateFlow<String?>(null)
-    val userNameError: StateFlow<String?> = _userNameError
+    private val _validationState = MutableStateFlow(false)
+    val validationState: StateFlow<Boolean> = _validationState
 
     private val _uid = MutableStateFlow("")
 
     init {
         fetchUser()
-    }
-
-    fun onNameChange(name: String) {
-        onUserFieldChange { user -> user.copy(name = name) }
-    }
-
-    fun onSurnameChange(surname: String) {
-        onUserFieldChange { user -> user.copy(surname = surname) }
-    }
-
-    fun onUsernameChange(username: String) {
-        onUserFieldChange { user -> user.copy(username = username) }
     }
 
     private fun fetchUser() {
@@ -67,7 +53,8 @@ class SettingsViewModel @Inject constructor(
             _uid.value = uid
             getUserInfo(uid)
                 .onSuccess { user ->
-                    _settingsState.value = UiState.Success(user!!)
+                    fillFormState(user!!)
+                    _settingsState.value = UiState.Success(user)
                 }
                 .onFailure { error ->
                     UiState.Error(error.message.orEmpty())
@@ -77,6 +64,34 @@ class SettingsViewModel @Inject constructor(
 
     private suspend fun getUserInfo(uid: String): Result<User?> {
         return firestoreRepository.getUser(uid)
+    }
+
+    suspend fun updateUserInfo() {
+        if (validateFields()) {
+            _validationState.value = true
+        } else {
+            _validationState.value = false
+            return
+        }
+
+        firestoreRepository.updateUser(
+            _uid.value,
+            mapOf(
+                "name" to _settingsFormState.value.name,
+                "surname" to _settingsFormState.value.surname,
+                "username" to _settingsFormState.value.username,
+                "updatedAt" to Timestamp.now()
+            )
+        )
+        onUserFieldChange { calendar -> calendar.copy(name = _settingsFormState.value.name) }
+        onUserFieldChange { calendar -> calendar.copy(surname = _settingsFormState.value.surname) }
+        onUserFieldChange { calendar -> calendar.copy(username = _settingsFormState.value.username) }
+    }
+
+    private fun fillFormState(user: User) {
+        _settingsFormState.value = _settingsFormState.value.copy(name = user.name)
+        _settingsFormState.value = _settingsFormState.value.copy(surname = user.surname)
+        _settingsFormState.value = _settingsFormState.value.copy(username = user.username)
     }
 
     private fun onUserFieldChange(fieldUpdater: (User) -> User) {
@@ -91,34 +106,37 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    suspend fun updateUserInfo() {
-        val state = (settingsState.value as UiState.Success<User>)
-
-        if (!validateFields(state.data)) {
-            return
-        }
-
-        firestoreRepository.updateUser(
-            _uid.value,
-            mapOf(
-                "name" to state.data.name,
-                "surname" to state.data.surname,
-                "username" to state.data.username,
-                "updatedAt" to Timestamp.now()
-            )
-        )
+    fun onNameChange(name: String) {
+        _settingsFormState.value = _settingsFormState.value.copy(name = name)
     }
 
-    private fun validateFields(user: User): Boolean {
-        val nameValidation = validateField(user.name)
-        val surnameValidation = validateField(user.surname)
-        val userNameValidation = validateField(user.username)
+    fun onSurnameChange(surname: String) {
+        _settingsFormState.value = _settingsFormState.value.copy(surname = surname)
+    }
 
-        _nameError.value = nameValidation.errorMessage
-        _surnameError.value = surnameValidation.errorMessage
-        _userNameError.value = userNameValidation.errorMessage
+    fun onUsernameChange(username: String) {
+        _settingsFormState.value = _settingsFormState.value.copy(username = username)
+    }
 
-        // Si hay errores, no continuar
-        return nameValidation.success && surnameValidation.success
+    private fun validateFields(): Boolean {
+        val nameValidation = validateField(_settingsFormState.value.name)
+        val surnameValidation = validateField(_settingsFormState.value.surname)
+        val usernameValidation = validateField(_settingsFormState.value.username)
+
+        _settingsFormState.value = _settingsFormState.value.copy(
+            nameError = nameValidation.errorMessage,
+            surnameError = surnameValidation.errorMessage,
+            usernameError = usernameValidation.errorMessage
+        )
+
+        return nameValidation.success && surnameValidation.success && usernameValidation.success
+    }
+
+    fun clearErrors() {
+        _settingsFormState.value = _settingsFormState.value.copy(
+            nameError = null,
+            surnameError = null,
+            usernameError = null
+        )
     }
 }

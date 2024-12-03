@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aramonp.workly.data.repository.AuthRepositoryImpl
 import com.aramonp.workly.data.repository.DataStoreRepositoryImpl
+import com.aramonp.workly.domain.constant.DataStorePreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,12 +27,12 @@ class ProfileViewModel @Inject constructor(
     }
 
     private suspend fun getNotificationState(): Boolean {
-        return dataStoreRepository.getPreference("notifications") ?: false
+        return dataStoreRepository.getPreference(DataStorePreferences.NOTIFICATIONS) ?: false
     }
 
     suspend fun saveNotificationState(value: Boolean) {
         try {
-            dataStoreRepository.savePreference("notifications", value)
+            dataStoreRepository.savePreference(DataStorePreferences.NOTIFICATIONS, value)
             _notificationsState.value = value
         } catch (e: Exception) {
             _notificationsState.value = false
