@@ -8,6 +8,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
@@ -21,6 +22,12 @@ import androidx.compose.ui.text.font.FontWeight
 @Composable
 fun LabeledField(label: String, value: String, isError: Boolean, errorMessage: String?, validationState: State<Boolean>, onDismiss: () -> Unit, onConfirmation: (String) -> Unit) {
     val showDialog = remember { mutableStateOf(false) }
+
+    LaunchedEffect(validationState.value) {
+        if (validationState.value) {
+            showDialog.value = false
+        }
+    }
 
     Column {
         Text(text = label, fontWeight = FontWeight.Bold)
@@ -46,9 +53,6 @@ fun LabeledField(label: String, value: String, isError: Boolean, errorMessage: S
                     onDismiss()
                 },
                 onConfirmation = {
-                    if (validationState.value) {
-                        showDialog.value = false
-                    }
                     onConfirmation(it)
                 },
                 dialogTitle = label,
